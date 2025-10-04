@@ -1,0 +1,27 @@
+<svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 26 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Group 1">
+<path id="Union" d="M11.5944 20.8098H4.4904L4.4904 1.18147e-05L11.5944 1.18147e-05V20.8098ZM25.8025 20.8098H13.6933L13.6933 1.18147e-05L25.8025 1.18147e-05V20.8098Z" fill="var(--fill-0, white)"/>
+<g id="eye one">
+<ellipse id="Ellipse 7" cx="5.00225" cy="7.81496" rx="4.52074" ry="4.66139" transform="rotate(6.26272 5.00225 7.81496)" fill="var(--fill-0, #86A8FF)"/>
+<g id="Mask group">
+<mask id="mask0_45_110" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="3" width="10" height="10">
+<ellipse id="Ellipse 11" cx="4.52074" cy="4.66139" rx="4.52074" ry="4.66139" transform="matrix(-0.994032 -0.109088 -0.109088 0.994032 10.0045 3.67455)" fill="var(--fill-0, #01081A)"/>
+</mask>
+<g mask="url(#mask0_45_110)">
+<ellipse id="Ellipse 8" cx="5.65093" cy="5.82674" rx="5.65093" ry="5.82674" transform="matrix(-0.994032 -0.109088 -0.109088 0.994032 6.7613 2.14633)" fill="var(--fill-0, #01081A)"/>
+</g>
+</g>
+</g>
+<g id="eye two">
+<ellipse id="Ellipse 6" cx="17.339" cy="8.6612" rx="4.52074" ry="4.66139" transform="rotate(6.26272 17.339 8.6612)" fill="var(--fill-0, #86A8FF)"/>
+<g id="Mask group_2">
+<mask id="mask1_45_110" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="12" y="4" width="10" height="10">
+<ellipse id="Ellipse 11_2" cx="4.52074" cy="4.66139" rx="4.52074" ry="4.66139" transform="matrix(-0.994032 -0.109088 -0.109088 0.994032 22.3412 4.52081)" fill="var(--fill-0, #01081A)"/>
+</mask>
+<g mask="url(#mask1_45_110)">
+<ellipse id="Ellipse 8_2" cx="5.65093" cy="5.82674" rx="5.65093" ry="5.82674" transform="matrix(-0.994032 -0.109088 -0.109088 0.994032 19.098 2.99261)" fill="var(--fill-0, #01081A)"/>
+</g>
+</g>
+</g>
+</g>
+</svg>
