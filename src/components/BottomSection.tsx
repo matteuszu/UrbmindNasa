@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
+import SearchInput from './SearchInput'
 import Carousel from './Carousel'
-import weatherIcon from '../assets/weather-icon.png'
+import NeighborhoodCard from './NeighborhoodCard'
 import { useLocationData } from '../hooks/useLocationData'
 
 interface BottomSectionProps {
@@ -13,7 +14,16 @@ interface BottomSectionProps {
 }
 
 export default function BottomSection({ cityName = "Uberlândia", userLocation }: BottomSectionProps) {
-  const { neighborhoods, getCurrentNeighborhood, getRandomNeighborhood, updateLocation } = useLocationData();
+  const [searchQuery, setSearchQuery] = useState('');
+  const { 
+    neighborhoods, 
+    cityNeighborhoods, 
+    isLoading, 
+    getCurrentNeighborhood, 
+    getRandomNeighborhood, 
+    updateLocation, 
+    loadCityNeighborhoods 
+  } = useLocationData();
 
   // Atualiza a localização quando recebe uma nova
   useEffect(() => {
@@ -22,45 +32,75 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation }
     }
   }, [userLocation, updateLocation]);
 
-  // Dados de exemplo para o carrossel com bairros dinâmicos
-  const carouselItems = [
+  // Carrega os bairros da cidade quando o componente monta
+  useEffect(() => {
+    loadCityNeighborhoods(cityName);
+  }, [cityName, loadCityNeighborhoods]);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    console.log('Buscando por:', query);
+    // Aqui você pode implementar a lógica de busca
+  };
+
+  // Cria cards para cada bairro da cidade
+  const neighborhoodCards = cityNeighborhoods.map((neighborhood, index) => ({
+    id: `neighborhood-${index}`,
+    component: (
+      <NeighborhoodCard
+        key={neighborhood.name}
+        neighborhood={neighborhood}
+        onClick={() => console.log(`Clicked on ${neighborhood.name}`)}
+        isActive={index === 0}
+      />
+    )
+  }));
+
+  // Se não há bairros carregados, mostra cards de exemplo
+  const fallbackCards = [
     {
-      id: 1,
-      title: "12º",
-      subtitle: "Severe storm",
-      timeRange: "7:30 PM to 9:40 PM",
-      image: weatherIcon,
-      neighborhood: getCurrentNeighborhood(),
-      onClick: () => console.log("Clicked on 12º")
+      id: 'fallback-1',
+      component: (
+        <NeighborhoodCard
+          neighborhood={{
+            name: 'Centro',
+            distance: 0,
+            coordinates: [0, 0]
+          }}
+          onClick={() => console.log("Clicked on Centro")}
+          isActive={true}
+        />
+      )
     },
     {
-      id: 2,
-      title: "8º",
-      subtitle: "Light rain",
-      timeRange: "10:15 AM to 12:30 PM",
-      image: weatherIcon,
-      neighborhood: getRandomNeighborhood(),
-      onClick: () => console.log("Clicked on 8º")
+      id: 'fallback-2',
+      component: (
+        <NeighborhoodCard
+          neighborhood={{
+            name: 'Jardim das Américas',
+            distance: 0,
+            coordinates: [0, 0]
+          }}
+          onClick={() => console.log("Clicked on Jardim das Américas")}
+        />
+      )
     },
     {
-      id: 3,
-      title: "15º",
-      subtitle: "Heavy rain",
-      timeRange: "2:45 PM to 4:20 PM",
-      image: weatherIcon,
-      neighborhood: getRandomNeighborhood(),
-      onClick: () => console.log("Clicked on 15º")
-    },
-    {
-      id: 4,
-      title: "5º",
-      subtitle: "Clear sky",
-      timeRange: "6:00 PM to 8:15 PM",
-      image: weatherIcon,
-      neighborhood: getRandomNeighborhood(),
-      onClick: () => console.log("Clicked on 5º")
+      id: 'fallback-3',
+      component: (
+        <NeighborhoodCard
+          neighborhood={{
+            name: 'Santa Mônica',
+            distance: 0,
+            coordinates: [0, 0]
+          }}
+          onClick={() => console.log("Clicked on Santa Mônica")}
+        />
+      )
     }
-  ]
+  ];
+
+  const carouselItems = neighborhoodCards.length > 0 ? neighborhoodCards : fallbackCards;
 
   return (
     <div
@@ -91,43 +131,19 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation }
           width: '100%'
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px'
-          }}
-        >
-          <div
-            style={{
-              fontSize: '24px',
-              lineHeight: '100%',
-              fontWeight: '400 !important',
-              color: 'white',
-              margin: '0',
-              fontFamily: 'Poppins, ui-sans-serif, sans-serif, system-ui',
-              fontStyle: 'normal'
-            }}
-          >
-            Hello, how are you?
-          </div>
-          
-          <div
-            style={{
-              fontSize: '16px',
-              lineHeight: '100%',
-              fontWeight: '400 !important',
-              color: '#F6F6F6',
-              margin: '0',
-              fontFamily: 'Poppins, ui-sans-serif, sans-serif, system-ui',
-              fontStyle: 'normal'
-            }}
-          >
-            you are in {cityName}
-          </div>
+        {/* Input de busca */}
+        <div style={{ 
+          width: '100%', 
+          maxWidth: '400px', 
+          margin: '0 auto 24px auto' 
+        }}>
+          <SearchInput
+            placeholder="Buscar local"
+            onSearch={handleSearch}
+          />
         </div>
 
-        {/* Carrossel de lugares próximos */}
+        {/* Carrossel de bairros */}
         <Carousel 
           items={carouselItems}
         />

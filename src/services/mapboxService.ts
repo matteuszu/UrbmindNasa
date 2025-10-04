@@ -22,13 +22,31 @@ export async function getNearbyNeighborhoods(
   try {
     const { latitude, longitude } = userLocation;
     
+    // Valida se as coordenadas estão dentro dos limites válidos
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+      console.error('Coordenadas inválidas:', { latitude, longitude });
+      return [];
+    }
+    
+    // Limita a precisão das coordenadas para evitar problemas com a API
+    const roundedLat = Math.round(latitude * 1000000) / 1000000; // 6 casas decimais
+    const roundedLng = Math.round(longitude * 1000000) / 1000000; // 6 casas decimais
+    
     // URL da API de Geocoding do Mapbox para busca reversa
-    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${MAPBOX_CONFIG.accessToken}&types=neighborhood,locality&limit=10`;
+    // Inclui types obrigatório quando limit é usado
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${roundedLng},${roundedLat}.json?access_token=${MAPBOX_CONFIG.accessToken}&types=place,locality,neighborhood&limit=10`;
     
     const response = await fetch(url);
     
     if (!response.ok) {
-      throw new Error(`Erro na API do Mapbox: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Erro detalhado da API Mapbox:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: url,
+        errorText: errorText
+      });
+      throw new Error(`Erro na API do Mapbox: ${response.status} - ${response.statusText}`);
     }
     
     const data = await response.json();
@@ -38,7 +56,12 @@ export async function getNearbyNeighborhoods(
     }
     
     // Processa os resultados e calcula distâncias
-    const neighborhoods: Neighborhood[] = data.features
+    let neighborhoods: Neighborhood[] = data.features
+      .filter((feature: any) => {
+        // Filtra apenas features que são neighborhoods ou localities
+        const placeType = feature.place_type?.[0];
+        return placeType === 'neighborhood' || placeType === 'locality' || placeType === 'place';
+      })
       .map((feature: any) => {
         const [lng, lat] = feature.center;
         const distance = calculateDistance(latitude, longitude, lat, lng);
@@ -52,6 +75,22 @@ export async function getNearbyNeighborhoods(
       .filter((neighborhood: Neighborhood) => neighborhood.distance <= radiusKm)
       .sort((a: Neighborhood, b: Neighborhood) => a.distance - b.distance)
       .slice(0, 5); // Limita a 5 bairros mais próximos
+    
+    // Se não encontrou neighborhoods específicos, usa os primeiros resultados disponíveis
+    if (neighborhoods.length === 0 && data.features.length > 0) {
+      neighborhoods = data.features
+        .slice(0, 3) // Pega os primeiros 3 resultados
+        .map((feature: any) => {
+          const [lng, lat] = feature.center;
+          const distance = calculateDistance(latitude, longitude, lat, lng);
+          
+          return {
+            name: feature.place_name || feature.text || 'Local próximo',
+            distance,
+            coordinates: [lng, lat]
+          };
+        });
+    }
     
     return neighborhoods;
   } catch (error) {
@@ -82,17 +121,83 @@ function calculateDistance(
 }
 
 /**
+ * Busca todos os bairros de uma cidade específica
+ */
+export async function getCityNeighborhoods(cityName: string): Promise<Neighborhood[]> {
+  try {
+    // URL da API de Geocoding do Mapbox para buscar bairros de uma cidade
+    const encodedCity = encodeURIComponent(cityName);
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedCity}.json?access_token=${MAPBOX_CONFIG.accessToken}&types=neighborhood&limit=20`;
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Erro ao buscar bairros da cidade:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: url,
+        errorText: errorText
+      });
+      return [];
+    }
+    
+    const data = await response.json();
+    
+    if (!data.features || data.features.length === 0) {
+      return [];
+    }
+    
+    // Processa os resultados
+    const neighborhoods: Neighborhood[] = data.features
+      .map((feature: any) => {
+        const [lng, lat] = feature.center;
+        
+        return {
+          name: feature.place_name || feature.text || 'Bairro desconhecido',
+          distance: 0, // Não calculamos distância para bairros da cidade
+          coordinates: [lng, lat]
+        };
+      })
+      .slice(0, 10); // Limita a 10 bairros
+    
+    return neighborhoods;
+  } catch (error) {
+    console.error('Erro ao buscar bairros da cidade:', error);
+    return [];
+  }
+}
+
+/**
  * Busca informações detalhadas de um local específico
  */
 export async function getLocationDetails(coordinates: [number, number]): Promise<string | null> {
   try {
     const [longitude, latitude] = coordinates;
-    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${MAPBOX_CONFIG.accessToken}&types=neighborhood,locality&limit=1`;
+    
+    // Valida se as coordenadas estão dentro dos limites válidos
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+      console.error('Coordenadas inválidas:', { latitude, longitude });
+      return null;
+    }
+    
+    // Limita a precisão das coordenadas para evitar problemas com a API
+    const roundedLat = Math.round(latitude * 1000000) / 1000000; // 6 casas decimais
+    const roundedLng = Math.round(longitude * 1000000) / 1000000; // 6 casas decimais
+    
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${roundedLng},${roundedLat}.json?access_token=${MAPBOX_CONFIG.accessToken}&types=place,locality,neighborhood&limit=1`;
     
     const response = await fetch(url);
     
     if (!response.ok) {
-      throw new Error(`Erro na API do Mapbox: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Erro detalhado da API Mapbox (getLocationDetails):', {
+        status: response.status,
+        statusText: response.statusText,
+        url: url,
+        errorText: errorText
+      });
+      throw new Error(`Erro na API do Mapbox: ${response.status} - ${response.statusText}`);
     }
     
     const data = await response.json();
