@@ -1,31 +1,35 @@
-import { useState } from 'react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
-import { Checkbox } from './ui/checkbox';
-import { Loader2, Eye, EyeOff, User, Mail, Lock } from 'lucide-react';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Check } from 'lucide-react';
 
 interface SignUpFormProps {
-  onSignUp: (name: string, email: string, password: string) => Promise<void>;
-  onSwitchToLogin: () => void;
-  isLoading: boolean;
+  onSignUp?: (data: SignUpData) => void;
+  onBack?: () => void;
+  error?: string;
 }
 
-export function SignUpForm({ onSignUp, onSwitchToLogin, isLoading }: SignUpFormProps) {
-  const [formData, setFormData] = useState({
+interface SignUpData {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
+export default function SignUpForm({ onSignUp, onBack, error }: SignUpFormProps) {
+  const [formData, setFormData] = useState<SignUpData>({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
-    acceptTerms: false,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Partial<SignUpData>>({});
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const validateForm = () => {
-    const newErrors: { [key: string]: string } = {};
+    const newErrors: Partial<SignUpData> = {};
 
     if (!formData.name.trim()) {
       newErrors.name = 'Nome é obrigatório';
@@ -43,6 +47,8 @@ export function SignUpForm({ onSignUp, onSwitchToLogin, isLoading }: SignUpFormP
       newErrors.password = 'Senha é obrigatória';
     } else if (formData.password.length < 6) {
       newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+      newErrors.password = 'Senha deve conter pelo menos 1 letra maiúscula, 1 minúscula e 1 número';
     }
 
     if (!formData.confirmPassword) {
@@ -51,194 +57,663 @@ export function SignUpForm({ onSignUp, onSwitchToLogin, isLoading }: SignUpFormP
       newErrors.confirmPassword = 'Senhas não coincidem';
     }
 
-    if (!formData.acceptTerms) {
-      newErrors.acceptTerms = 'Você deve aceitar os termos de uso';
+    if (!agreedToTerms) {
+      newErrors.confirmPassword = 'Você deve aceitar os termos de uso';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleInputChange = (field: keyof SignUpData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) return;
-
+    
+    setIsLoading(true);
+    
     try {
-      await onSignUp(formData.name, formData.email, formData.password);
+      if (onSignUp) {
+        await onSignUp(formData);
+      }
+      // Simular delay de API
+      await new Promise(resolve => setTimeout(resolve, 1000));
     } catch (error) {
-      setErrors({ email: 'Este email já está em uso' });
+      console.error('Erro no cadastro:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const updateFormData = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Limpar erro do campo quando o usuário começar a digitar
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
+  const getPasswordStrength = (password: string) => {
+    let strength = 0;
+    if (password.length >= 6) strength++;
+    if (/(?=.*[a-z])/.test(password)) strength++;
+    if (/(?=.*[A-Z])/.test(password)) strength++;
+    if (/(?=.*\d)/.test(password)) strength++;
+    if (/(?=.*[!@#$%^&*])/.test(password)) strength++;
+    return strength;
   };
+
+  const passwordStrength = getPasswordStrength(formData.password);
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="space-y-1">
-        <CardTitle>Criar sua conta</CardTitle>
-        <CardDescription>
-          Preencha os dados abaixo para criar sua conta gratuita
-        </CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome completo</Label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
-              <Input
-                id="name"
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #01081A 0%, #0D1B2A 100%)',
+        padding: '16px',
+        fontFamily: 'Poppins, ui-sans-serif, sans-serif',
+        paddingBottom: '80px', // Espaço extra para evitar que o conteúdo fique escondido atrás da barra do navegador
+      }}
+    >
+      <div
+        style={{
+          maxWidth: '400px',
+          margin: '0 auto',
+          padding: '0',
+        }}
+      >
+        {/* Header */}
+        <div style={{ marginBottom: '32px' }}>
+          {/* Botão Voltar */}
+          {onBack && (
+            <button
+              onClick={onBack}
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                marginBottom: '20px',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+              }}
+            >
+              <ArrowLeft size={20} />
+            </button>
+          )}
+
+          {/* Logo e Título */}
+          <div style={{ textAlign: 'center' }}>
+
+          {/* Logo */}
+          <div style={{ marginBottom: '16px' }}>
+            <img 
+              src="/logo urbmind.svg" 
+              alt="UrbMind Logo"
+              style={{
+                height: '32px',
+                width: 'auto',
+                display: 'block',
+                margin: '0 auto',
+                filter: 'brightness(0) invert(1)',
+              }}
+            />
+          </div>
+          
+          <h1
+            style={{
+              fontSize: '28px',
+              fontWeight: '700',
+              color: 'white',
+              margin: '0 0 8px 0',
+              letterSpacing: '-0.5px',
+            }}
+          >
+            Criar conta
+          </h1>
+          
+          <p
+            style={{
+              fontSize: '16px',
+              color: 'rgba(255, 255, 255, 0.7)',
+              margin: 0,
+              lineHeight: '1.5',
+            }}
+          >
+            Junte-se ao UrbMind e explore sua cidade
+          </p>
+          </div>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div
+            style={{
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '12px',
+              padding: '12px 16px',
+              marginBottom: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <div
+              style={{
+                width: '20px',
+                height: '20px',
+                backgroundColor: '#EF4444',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <span style={{ color: 'white', fontSize: '12px', fontWeight: 'bold' }}>!</span>
+            </div>
+            <p
+              style={{
+                color: '#EF4444',
+                fontSize: '14px',
+                margin: 0,
+                lineHeight: '1.4',
+              }}
+            >
+              {error}
+            </p>
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Name Field */}
+          <div>
+            <label
+              style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: 'white',
+                marginBottom: '8px',
+              }}
+            >
+              Nome completo
+            </label>
+            <div style={{ position: 'relative' }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '16px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  zIndex: 1,
+                }}
+              >
+                <User size={20} />
+              </div>
+              <input
                 type="text"
-                placeholder="Seu nome completo"
                 value={formData.name}
-                onChange={(e) => updateFormData('name', e.target.value)}
-                className={errors.name ? 'border-destructive pl-10' : 'pl-10'}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                placeholder="Seu nome completo"
+                style={{
+                  width: '100%',
+                  height: '56px',
+                  padding: '0 16px 0 48px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  border: errors.name ? '2px solid #EF4444' : '2px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '16px',
+                  fontSize: '16px',
+                  color: 'white',
+                  outline: 'none',
+                  transition: 'all 0.3s ease',
+                  fontFamily: 'Poppins, ui-sans-serif, sans-serif',
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#0D52FF';
+                  e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = errors.name ? '#EF4444' : 'rgba(255, 255, 255, 0.1)';
+                  e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                }}
               />
             </div>
             {errors.name && (
-              <p className="text-sm text-destructive">{errors.name}</p>
+              <p style={{ color: '#EF4444', fontSize: '12px', margin: '4px 0 0 0' }}>
+                {errors.name}
+              </p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
-              <Input
-                id="email"
+          {/* Email Field */}
+          <div>
+            <label
+              style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: 'white',
+                marginBottom: '8px',
+              }}
+            >
+              Email
+            </label>
+            <div style={{ position: 'relative' }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '16px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  zIndex: 1,
+                }}
+              >
+                <Mail size={20} />
+              </div>
+              <input
                 type="email"
-                placeholder="seu@email.com"
                 value={formData.email}
-                onChange={(e) => updateFormData('email', e.target.value)}
-                className={errors.email ? 'border-destructive pl-10' : 'pl-10'}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                placeholder="seu@email.com"
+                style={{
+                  width: '100%',
+                  height: '56px',
+                  padding: '0 16px 0 48px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  border: errors.email ? '2px solid #EF4444' : '2px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '16px',
+                  fontSize: '16px',
+                  color: 'white',
+                  outline: 'none',
+                  transition: 'all 0.3s ease',
+                  fontFamily: 'Poppins, ui-sans-serif, sans-serif',
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#0D52FF';
+                  e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = errors.email ? '#EF4444' : 'rgba(255, 255, 255, 0.1)';
+                  e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                }}
               />
             </div>
             {errors.email && (
-              <p className="text-sm text-destructive">{errors.email}</p>
+              <p style={{ color: '#EF4444', fontSize: '12px', margin: '4px 0 0 0' }}>
+                {errors.email}
+              </p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
-              <Input
-                id="password"
+          {/* Password Field */}
+          <div>
+            <label
+              style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: 'white',
+                marginBottom: '8px',
+              }}
+            >
+              Senha
+            </label>
+            <div style={{ position: 'relative' }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '16px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  zIndex: 1,
+                }}
+              >
+                <Lock size={20} />
+              </div>
+              <input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Mínimo 6 caracteres"
                 value={formData.password}
-                onChange={(e) => updateFormData('password', e.target.value)}
-                className={errors.password ? 'border-destructive pl-10 pr-10' : 'pl-10 pr-10'}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                placeholder="Sua senha"
+                style={{
+                  width: '100%',
+                  height: '56px',
+                  padding: '0 48px 0 48px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  border: errors.password ? '2px solid #EF4444' : '2px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '16px',
+                  fontSize: '16px',
+                  color: 'white',
+                  outline: 'none',
+                  transition: 'all 0.3s ease',
+                  fontFamily: 'Poppins, ui-sans-serif, sans-serif',
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#0D52FF';
+                  e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = errors.password ? '#EF4444' : 'rgba(255, 255, 255, 0.1)';
+                  e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                }}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                style={{
+                  position: 'absolute',
+                  right: '16px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  borderRadius: '4px',
+                  transition: 'color 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'white';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)';
+                }}
               >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
+            
+            {/* Password Strength Indicator */}
+            {formData.password && (
+              <div style={{ marginTop: '8px' }}>
+                <div style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+                  {[1, 2, 3, 4, 5].map((level) => (
+                    <div
+                      key={level}
+                      style={{
+                        height: '4px',
+                        flex: 1,
+                        borderRadius: '2px',
+                        backgroundColor: level <= passwordStrength 
+                          ? passwordStrength <= 2 ? '#EF4444' 
+                            : passwordStrength <= 3 ? '#F59E0B' 
+                            : '#10B981'
+                          : 'rgba(255, 255, 255, 0.1)',
+                        transition: 'background-color 0.3s ease',
+                      }}
+                    />
+                  ))}
+                </div>
+                <p style={{ 
+                  fontSize: '12px', 
+                  color: passwordStrength <= 2 ? '#EF4444' : passwordStrength <= 3 ? '#F59E0B' : '#10B981',
+                  margin: 0 
+                }}>
+                  {passwordStrength <= 2 ? 'Senha fraca' : passwordStrength <= 3 ? 'Senha média' : 'Senha forte'}
+                </p>
+              </div>
+            )}
+            
             {errors.password && (
-              <p className="text-sm text-destructive">{errors.password}</p>
+              <p style={{ color: '#EF4444', fontSize: '12px', margin: '4px 0 0 0' }}>
+                {errors.password}
+              </p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirmar senha</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
-              <Input
-                id="confirmPassword"
+          {/* Confirm Password Field */}
+          <div>
+            <label
+              style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: 'white',
+                marginBottom: '8px',
+              }}
+            >
+              Confirmar senha
+            </label>
+            <div style={{ position: 'relative' }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '16px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  zIndex: 1,
+                }}
+              >
+                <Lock size={20} />
+              </div>
+              <input
                 type={showConfirmPassword ? 'text' : 'password'}
-                placeholder="Digite novamente sua senha"
                 value={formData.confirmPassword}
-                onChange={(e) => updateFormData('confirmPassword', e.target.value)}
-                className={errors.confirmPassword ? 'border-destructive pl-10 pr-10' : 'pl-10 pr-10'}
+                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                placeholder="Confirme sua senha"
+                style={{
+                  width: '100%',
+                  height: '56px',
+                  padding: '0 48px 0 48px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  border: errors.confirmPassword ? '2px solid #EF4444' : '2px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '16px',
+                  fontSize: '16px',
+                  color: 'white',
+                  outline: 'none',
+                  transition: 'all 0.3s ease',
+                  fontFamily: 'Poppins, ui-sans-serif, sans-serif',
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#0D52FF';
+                  e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = errors.confirmPassword ? '#EF4444' : 'rgba(255, 255, 255, 0.1)';
+                  e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                }}
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                style={{
+                  position: 'absolute',
+                  right: '16px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  borderRadius: '4px',
+                  transition: 'color 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'white';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)';
+                }}
               >
-                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
             {errors.confirmPassword && (
-              <p className="text-sm text-destructive">{errors.confirmPassword}</p>
+              <p style={{ color: '#EF4444', fontSize: '12px', margin: '4px 0 0 0' }}>
+                {errors.confirmPassword}
+              </p>
             )}
           </div>
 
-          <div className="flex items-start space-x-2">
-            <Checkbox
-              id="acceptTerms"
-              checked={formData.acceptTerms}
-              onCheckedChange={(checked) => updateFormData('acceptTerms', !!checked)}
-              className={errors.acceptTerms ? 'border-destructive' : ''}
-            />
-            <Label 
-              htmlFor="acceptTerms" 
-              className="text-sm leading-4 cursor-pointer"
+          {/* Terms Agreement */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+            <button
+              type="button"
+              onClick={() => setAgreedToTerms(!agreedToTerms)}
+              style={{
+                width: '20px',
+                height: '20px',
+                backgroundColor: agreedToTerms ? '#0D52FF' : 'transparent',
+                border: agreedToTerms ? '2px solid #0D52FF' : '2px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                flexShrink: 0,
+                marginTop: '2px',
+              }}
             >
-              Eu aceito os{' '}
-              <button
-                type="button"
-                className="text-primary hover:underline"
-                onClick={() => {
-                  // Implementar modal de termos futuramente
-                  alert('Termos de uso serão exibidos aqui');
+              {agreedToTerms && <Check size={12} color="white" />}
+            </button>
+            <p style={{ 
+              fontSize: '14px', 
+              color: 'rgba(255, 255, 255, 0.7)', 
+              margin: 0, 
+              lineHeight: '1.4' 
+            }}>
+              Eu concordo com os{' '}
+              <Link
+                to="/terms"
+                style={{ color: '#0D52FF', textDecoration: 'none' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#3B82F6';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#0D52FF';
                 }}
               >
-                termos de uso
-              </button>
+                Termos de Uso
+              </Link>
               {' '}e{' '}
-              <button
-                type="button"
-                className="text-primary hover:underline"
-                onClick={() => {
-                  // Implementar modal de privacidade futuramente
-                  alert('Política de privacidade será exibida aqui');
+              <Link
+                to="/privacy"
+                style={{ color: '#0D52FF', textDecoration: 'none' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#3B82F6';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#0D52FF';
                 }}
               >
-                política de privacidade
-              </button>
-            </Label>
+                Política de Privacidade
+              </Link>
+            </p>
           </div>
-          {errors.acceptTerms && (
-            <p className="text-sm text-destructive">{errors.acceptTerms}</p>
-          )}
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-3">
-          <Button type="submit" className="w-full" disabled={isLoading}>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={isLoading || !agreedToTerms}
+            style={{
+              width: '100%',
+              height: '56px',
+              backgroundColor: isLoading || !agreedToTerms ? 'rgba(13, 82, 255, 0.7)' : '#0D52FF',
+              border: 'none',
+              borderRadius: '16px',
+              fontSize: '16px',
+              fontWeight: '600',
+              color: 'white',
+              cursor: isLoading || !agreedToTerms ? 'not-allowed' : 'pointer',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              marginTop: '8px',
+            }}
+            onMouseEnter={(e) => {
+              if (!isLoading && agreedToTerms) {
+                e.currentTarget.style.backgroundColor = '#3B82F6';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isLoading && agreedToTerms) {
+                e.currentTarget.style.backgroundColor = '#0D52FF';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }
+            }}
+          >
             {isLoading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <div
+                  style={{
+                    width: '20px',
+                    height: '20px',
+                    border: '2px solid rgba(255, 255, 255, 0.3)',
+                    borderTop: '2px solid white',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite',
+                  }}
+                />
                 Criando conta...
               </>
             ) : (
               'Criar conta'
             )}
-          </Button>
-          <div className="text-center">
-            <span className="text-sm text-muted-foreground">
-              Já tem uma conta?{' '}
-              <button
-                type="button"
-                onClick={onSwitchToLogin}
-                className="text-primary hover:underline"
+          </button>
+        </form>
+
+        {/* Login Link */}
+        <div
+          style={{
+            textAlign: 'center',
+            marginTop: '32px',
+            paddingTop: '24px',
+            borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+          }}
+        >
+          <p
+            style={{
+              fontSize: '14px',
+              color: 'rgba(255, 255, 255, 0.7)',
+              margin: '0 0 16px 0',
+            }}
+          >
+            Já tem uma conta?
+          </p>
+          <Link
+            to="/login"
+            style={{
+              fontSize: '16px',
+              fontWeight: '600',
+              color: '#0D52FF',
+              textDecoration: 'none',
+              transition: 'color 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#3B82F6';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#0D52FF';
+            }}
               >
                 Fazer login
-              </button>
-            </span>
+          </Link>
+        </div>
+      </div>
           </div>
-        </CardFooter>
-      </form>
-    </Card>
   );
 }

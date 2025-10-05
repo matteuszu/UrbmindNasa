@@ -2,6 +2,12 @@
 
 /* Mapbox GL CSS */
 @import 'mapbox-gl/dist/mapbox-gl.css';
+
+/* Animação para o spinner de loading */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 @layer properties {
   @supports (((-webkit-hyphens: none)) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color: rgb(from red r g b)))) {
     *, :before, :after, ::backdrop {
@@ -1754,7 +1760,7 @@ html {
 /* Prevenir zoom da página inteira */
 html, body {
   touch-action: manipulation;
-  overflow: hidden;
+  overflow: auto;
   height: 100%;
   margin: 0;
   padding: 0;
@@ -1810,6 +1816,28 @@ html, body {
     flex: 1 1 calc(50% - 8px) !important;
     min-width: 0 !important;
     width: auto !important;
+  }
+}
+
+/* Header Logo Container - Desktop Styles */
+@media (min-width: 768px) {
+  .header-container {
+    justify-content: flex-start !important;
+    padding-left: 24px !important;
+  }
+  
+  .header-logo-container {
+    height: 68px !important;
+    max-width: 343px !important;
+    width: fit-content !important;
+    padding: 20px !important;
+    justify-content: flex-start !important;
+    border-radius: 999px !important;
+    background-color: rgba(29, 29, 29, 0.4) !important;
+    backdrop-filter: blur(15px) !important;
+    -webkit-backdrop-filter: blur(15px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
   }
 }
 

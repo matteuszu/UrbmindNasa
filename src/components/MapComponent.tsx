@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react'
 import type { Map as MapboxMap, LngLatLike } from 'mapbox-gl'
 import lottie from 'lottie-web'
 
@@ -12,12 +12,95 @@ interface MapComponentProps {
   onLocationUpdate?: (location: UserLocation) => void;
 }
 
-export default function MapComponent({ onLocationUpdate }: MapComponentProps) {
+export interface MapComponentRef {
+  recenterToUserLocation: () => void;
+}
+
+const MapComponent = forwardRef<MapComponentRef, MapComponentProps>(({ onLocationUpdate }, ref) => {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<MapboxMap | null>(null)
   const watchIdRef = useRef<number | null>(null)
   const userMarkerRef = useRef<HTMLElement | null>(null)
   const lottieAnimationRef = useRef<any>(null)
+
+  const recenterToUserLocation = () => {
+    if (mapRef.current) {
+      console.log('🔄 Recentralizando mapa...')
+      
+      // Primeiro tenta usar a localização atual do usuário
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const { longitude, latitude } = pos.coords
+            console.log('📍 Localização obtida:', { longitude, latitude })
+            
+            // Atualiza o marcador do usuário
+            if (userMarkerRef.current) {
+              const marker = userMarkerRef.current
+              if (marker && marker.setLngLat) {
+                marker.setLngLat([longitude, latitude])
+              }
+            }
+            
+            // Recentraliza o mapa usando flyTo (mais suave e visível)
+            mapRef.current?.flyTo({
+              center: [longitude, latitude],
+              zoom: 16, // Mesmo zoom inicial do mapa
+              pitch: 60,
+              bearing: 0,
+              essential: true, // Garante que a animação seja executada
+              duration: 1500 // Duração otimizada
+            })
+            
+            // Notifica o componente pai sobre a localização
+            onLocationUpdate?.({
+              latitude,
+              longitude,
+              accuracy: pos.coords.accuracy
+            })
+            console.log('✅ Mapa recentralizado na sua localização!')
+          },
+          (err) => {
+            console.log('⚠️ Geolocalização negada, usando localização padrão (Uberlândia)')
+            console.log('Erro detalhado:', err)
+            
+            // Fallback para Uberlândia com flyTo para ser mais visível
+            mapRef.current?.flyTo({
+              center: [-48.2772, -18.9186],
+              zoom: 16, // Mesmo zoom inicial do mapa
+              pitch: 60,
+              bearing: 0,
+              essential: true,
+              duration: 1500
+            })
+            console.log('✅ Mapa recentralizado em Uberlândia!')
+          },
+          { 
+            enableHighAccuracy: true, 
+            timeout: 5000, // Timeout otimizado
+            maximumAge: 30000 // Cache por 30 segundos para ser mais rápido
+          }
+        )
+      } else {
+        console.log('⚠️ Geolocalização não disponível, usando localização padrão')
+        // Fallback para Uberlândia se geolocalização não estiver disponível
+        mapRef.current.flyTo({
+          center: [-48.2772, -18.9186],
+          zoom: 16, // Mesmo zoom inicial do mapa
+          pitch: 60,
+          bearing: 0,
+          essential: true,
+          duration: 1500
+        })
+        console.log('✅ Mapa recentralizado em Uberlândia!')
+      }
+    }
+  }
+
+  // Expor a função de recentralização para o componente pai
+  useImperativeHandle(ref, () => ({
+    recenterToUserLocation
+  }), []);
 
   useEffect(() => {
     let isMounted = true
@@ -294,4 +377,8 @@ export default function MapComponent({ onLocationUpdate }: MapComponentProps) {
       }}
     />
   )
-}
+})
+
+MapComponent.displayName = 'MapComponent'
+
+export default MapComponent

@@ -324,6 +324,38 @@ export default function MapComponent() {
         overflow: 'hidden'
       }}
     >
+      {/* Logo UrbMind */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 99999,
+          pointerEvents: 'none', // Não interfere com interações do mapa
+          opacity: 0.95,
+          filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4))',
+          backgroundColor: 'rgba(0, 0, 0, 0.3)',
+          borderRadius: '8px',
+          padding: '8px 12px',
+          backdropFilter: 'blur(4px)'
+        }}
+      >
+        <img 
+          src="/logo urbmind.svg" 
+          alt="UrbMind Logo"
+          style={{
+            height: '20px',
+            width: 'auto',
+            display: 'block'
+          }}
+          onError={(e) => {
+            console.error('Erro ao carregar logo:', e);
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      </div>
+
       {/* Botão de Recentralizar - Temporariamente sempre visível para teste */}
       {(showRecenterButton || true) && (
         <button
