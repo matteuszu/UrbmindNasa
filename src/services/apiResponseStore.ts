@@ -1,52 +1,57 @@
 /**
- * Store global para armazenar a resposta da API analisar-batch
- * Permite acesso à resposta em qualquer parte do projeto
+ * Store global para armazenar dados em background
+ * Apenas para processamento - sem interface visual
  */
+
+interface WeatherData {
+  pontos: Array<{
+    lon: number;
+    lat: number;
+    chuva_mm: number;
+    freq_min: number;
+    modo: string;
+    weather_description?: string;
+  }>;
+}
+
+interface WeatherDetails {
+  totalPontos: number;
+  pontosComWeather: number;
+  weatherTypes: string[];
+  weatherCodes: string[];
+}
+
+interface GlobalData {
+  weatherData: WeatherData;
+  apiResponse: any;
+  weatherDetails: WeatherDetails;
+  timestamp: string;
+}
 
 interface ApiResponseStore {
   data: any | null;
+  weatherData: WeatherData | null;
+  globalData: GlobalData | null;
   timestamp: number | null;
-  subscribers: ((data: any | null) => void)[];
 }
 
 const store: ApiResponseStore = {
   data: null,
+  weatherData: null,
+  globalData: null,
   timestamp: null,
-  subscribers: [],
 };
 
 export const apiResponseStore = {
   /**
-   * Obter dados da resposta da API
+   * Obter dados globais completos
    */
-  getData: () => store.data,
+  getGlobalData: () => store.globalData,
   
   /**
-   * Obter timestamp da última resposta
+   * Verificar se há dados globais disponíveis
    */
-  getTimestamp: () => store.timestamp,
-  
-  /**
-   * Verificar se há dados disponíveis
-   */
-  hasData: () => store.data !== null,
-  
-  /**
-   * Inscrever-se para receber atualizações
-   */
-  subscribe: (callback: (data: any | null) => void) => {
-    store.subscribers.push(callback);
-    return () => {
-      store.subscribers = store.subscribers.filter((sub) => sub !== callback);
-    };
-  },
-  
-  /**
-   * Notificar todos os subscribers
-   */
-  notifySubscribers: () => {
-    store.subscribers.forEach((callback) => callback(store.data));
-  },
+  hasGlobalData: () => store.globalData !== null,
 };
 
 /**
@@ -55,10 +60,21 @@ export const apiResponseStore = {
 export function setApiResponse(data: any) {
   store.data = data;
   store.timestamp = Date.now();
-  apiResponseStore.notifySubscribers();
-  
-  console.log('📊 Resposta da API armazenada no store global:', data);
-  console.log('⏰ Timestamp:', new Date(store.timestamp).toLocaleString());
+}
+
+/**
+ * Definir dados de weather
+ */
+export function setWeatherData(weatherData: WeatherData) {
+  store.weatherData = weatherData;
+}
+
+/**
+ * Definir dados globais completos
+ */
+export function setGlobalData(globalData: GlobalData) {
+  store.globalData = globalData;
+  store.timestamp = Date.now();
 }
 
 /**
@@ -67,9 +83,6 @@ export function setApiResponse(data: any) {
 export function clearApiResponse() {
   store.data = null;
   store.timestamp = null;
-  apiResponseStore.notifySubscribers();
-  
-  console.log('🗑️ Dados da API limpos do store global');
 }
 
 /**
@@ -80,8 +93,22 @@ export function getApiResponse(): any | null {
 }
 
 /**
+ * Obter dados de weather (função de conveniência)
+ */
+export function getWeatherData(): WeatherData | null {
+  return store.weatherData;
+}
+
+/**
  * Verificar se há dados disponíveis (função de conveniência)
  */
 export function hasApiResponse(): boolean {
   return store.data !== null;
+}
+
+/**
+ * Verificar se há dados de weather disponíveis (função de conveniência)
+ */
+export function hasWeatherData(): boolean {
+  return store.weatherData !== null;
 }
