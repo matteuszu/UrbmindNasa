@@ -1,6 +1,10 @@
 import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react'
 import type { Map as MapboxMap, LngLatLike } from 'mapbox-gl'
 import lottie from 'lottie-web'
+import { useMapViewportFix } from '../hooks/useMapViewportFix'
+import { useMapNavigation } from '../hooks/useMapNavigation'
+import type { GeocodingResult } from '../services/geocodingService'
+import { geocodingService } from '../services/geocodingService'
 
 interface UserLocation {
   latitude: number;
@@ -10,18 +14,488 @@ interface UserLocation {
 
 interface MapComponentProps {
   onLocationUpdate?: (location: UserLocation) => void;
+  onAddressSelect?: (result: GeocodingResult) => void;
 }
 
 export interface MapComponentRef {
   recenterToUserLocation: () => void;
+  navigateToAddress: (result: GeocodingResult) => void;
+  flyTo: (options: any) => void;
+  showRedArea: (bbox: [number, number, number, number], center: [number, number]) => void;
+  hideRedArea: () => void;
+  showNeighborhoodStreets: (streets: GeocodingResult[], neighborhoodName: string) => void;
+  showFloodAlert: (coordinates: [number, number], radiusMeters?: number) => void;
+  hideFloodAlert: () => void;
 }
 
-const MapComponent = forwardRef<MapComponentRef, MapComponentProps>(({ onLocationUpdate }, ref) => {
+const MapComponent = forwardRef<MapComponentRef, MapComponentProps>(({ onLocationUpdate, onAddressSelect }, ref) => {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<MapboxMap | null>(null)
   const watchIdRef = useRef<number | null>(null)
   const userMarkerRef = useRef<HTMLElement | null>(null)
   const lottieAnimationRef = useRef<any>(null)
+  
+  // Hook para corrigir problemas de viewport com teclado virtual
+  useMapViewportFix(mapRef)
+  
+  // Hook para navegação do mapa
+  const { navigateToAddress, navigateToPOI, navigateToCity } = useMapNavigation(mapRef)
+
+  // Função para navegar para um endereço selecionado
+  const handleAddressSelect = async (result: GeocodingResult) => {
+    console.log('🔴 MAPCOMPONENT: handleAddressSelect chamado!')
+    console.log('🏠 Endereço selecionado:', result.place_name)
+    console.log('📍 Coordenadas:', result.center)
+    console.log('🏷️ Tipos do lugar:', result.place_type)
+    console.log('📋 Context completo:', result.context)
+    
+    // Remove área vermelha anterior se existir
+    hideRedArea()
+    
+    // TESTE: Analisar dados do Mapbox para diferentes tipos de busca
+    console.log('🧪 INICIANDO TESTES DE DADOS MAPBOX...')
+    await geocodingService.testMapboxData('Rua da Conquista, Uberlândia')
+    await geocodingService.testMapboxData('Centro, Uberlândia')
+    await geocodingService.testMapboxData('Uberlândia, MG')
+    
+    // Extrai o nome do bairro do resultado
+    const neighborhoodName = geocodingService.extractNeighborhoodName(result)
+    console.log('🏘️ Bairro extraído:', neighborhoodName)
+    
+    if (neighborhoodName && result.place_type.includes('address')) {
+      console.log(`🏘️ Bairro detectado: ${neighborhoodName} - iniciando busca de ruas...`)
+      
+      try {
+        // Busca todas as ruas do bairro
+        const neighborhoodStreets = await geocodingService.searchStreetsInNeighborhood(neighborhoodName)
+        console.log('🔍 Ruas encontradas:', neighborhoodStreets.length)
+        
+        if (neighborhoodStreets.length > 0) {
+          console.log(`🔴 Pintando ${neighborhoodStreets.length} ruas do bairro ${neighborhoodName} de vermelho`)
+          showNeighborhoodStreets(neighborhoodStreets, neighborhoodName)
+        } else {
+          console.log('⚠️ Nenhuma rua encontrada no bairro')
+        }
+      } catch (error) {
+        console.error('❌ Erro ao buscar ruas do bairro:', error)
+      }
+    } else {
+      console.log('ℹ️ Não é um endereço ou bairro não detectado')
+      console.log('ℹ️ neighborhoodName:', neighborhoodName)
+      console.log('ℹ️ place_type includes address:', result.place_type.includes('address'))
+    }
+    
+    // Determina o tipo de navegação baseado no tipo do lugar
+    const placeTypes = result.place_type || []
+    
+    // Verifica se é a "Rua da conquista" para mostrar alerta de alagamento
+    const isRuaDaConquista = result.place_name.toLowerCase().includes('rua da conquista')
+    
+    if (placeTypes.includes('address')) {
+      console.log('🏠 Navegando como endereço com PIN')
+      navigateToAddress(result.center, result.place_name)
+      
+      // Mostra alerta de alagamento APENAS para "Rua da conquista"
+      if (isRuaDaConquista) {
+        console.log('🚨 Mostrando alerta de alagamento para Rua da conquista (teste mockado)')
+        showFloodAlert(result.center, 1000)
+      } else {
+        console.log('ℹ️ Endereço normal - não mostrando alerta de alagamento')
+      }
+    } else if (placeTypes.includes('poi')) {
+      console.log('📍 Navegando como POI')
+      navigateToPOI(result.center, result.place_name)
+      
+      // Mostra alerta de alagamento APENAS para "Rua da conquista"
+      if (isRuaDaConquista) {
+        console.log('🚨 Mostrando alerta de alagamento para Rua da conquista (teste mockado)')
+        showFloodAlert(result.center, 1000)
+      } else {
+        console.log('ℹ️ POI normal - não mostrando alerta de alagamento')
+      }
+    } else if (placeTypes.includes('place') || placeTypes.includes('locality')) {
+      console.log('🏙️ Navegando como cidade')
+      navigateToCity(result.center, result.place_name)
+      
+      // Para cidades, não mostra alerta de alagamento (área muito grande)
+      console.log('ℹ️ Cidade selecionada - não mostrando alerta de alagamento')
+    } else {
+      // Navegação padrão
+      console.log('🏠 Navegação padrão com PIN')
+      navigateToAddress(result.center, result.place_name)
+      
+      // Mostra alerta de alagamento APENAS para "Rua da conquista"
+      if (isRuaDaConquista) {
+        console.log('🚨 Mostrando alerta de alagamento para Rua da conquista (teste mockado)')
+        showFloodAlert(result.center, 1000)
+      } else {
+        console.log('ℹ️ Navegação padrão normal - não mostrando alerta de alagamento')
+      }
+    }
+    
+    // Notifica o componente pai
+    onAddressSelect?.(result)
+  }
+
+  // Função para mostrar área vermelha no mapa
+  const showRedArea = (bbox: [number, number, number, number], center: [number, number]) => {
+    if (!mapRef.current) return
+
+    const map = mapRef.current
+
+    // Remove área vermelha anterior se existir
+    hideRedArea()
+
+    // Cria o polígono da área vermelha
+    const polygon = {
+      type: 'Feature' as const,
+      geometry: {
+        type: 'Polygon' as const,
+        coordinates: [[
+          [bbox[0], bbox[1]], // minLng, minLat
+          [bbox[2], bbox[1]], // maxLng, minLat
+          [bbox[2], bbox[3]], // maxLng, maxLat
+          [bbox[0], bbox[3]], // minLng, maxLat
+          [bbox[0], bbox[1]]  // fecha o polígono
+        ]]
+      },
+      properties: {
+        name: 'Rua da Conquista - Área Especial'
+      }
+    }
+
+    // Adiciona a fonte de dados
+    if (!map.getSource('red-area-source')) {
+      map.addSource('red-area-source', {
+        type: 'geojson',
+        data: polygon
+      })
+    } else {
+      (map.getSource('red-area-source') as any).setData(polygon)
+    }
+
+    // Adiciona a camada de preenchimento vermelho
+    if (!map.getLayer('red-area-fill')) {
+      map.addLayer({
+        id: 'red-area-fill',
+        type: 'fill',
+        source: 'red-area-source',
+        paint: {
+          'fill-color': '#ff0000',
+          'fill-opacity': 0.3
+        }
+      })
+    }
+
+    // Adiciona a camada de borda vermelha
+    if (!map.getLayer('red-area-border')) {
+      map.addLayer({
+        id: 'red-area-border',
+        type: 'line',
+        source: 'red-area-source',
+        paint: {
+          'line-color': '#ff0000',
+          'line-width': 3,
+          'line-opacity': 0.8
+        }
+      })
+    }
+
+    // Navega para a área
+    map.fitBounds(bbox, {
+      padding: 50,
+      duration: 1000
+    })
+
+    console.log('🔴 Área vermelha criada com sucesso')
+  }
+
+  // Função para mostrar todas as ruas de um bairro em vermelho
+  const showNeighborhoodStreets = (streets: GeocodingResult[], neighborhoodName: string) => {
+    if (!mapRef.current || streets.length === 0) return
+
+    const map = mapRef.current
+
+    // Remove ruas vermelhas anteriores se existirem
+    hideRedArea()
+
+    // Cria um array de features para todas as ruas
+    const streetFeatures = streets.map((street, index) => {
+      if (!street.bbox) {
+        // Se não tem bbox, cria um pequeno quadrado ao redor do centro
+        const center = street.center
+        const offset = 0.0005
+        return {
+          type: 'Feature' as const,
+          geometry: {
+            type: 'Polygon' as const,
+            coordinates: [[
+              [center[0] - offset, center[1] - offset],
+              [center[0] + offset, center[1] - offset],
+              [center[0] + offset, center[1] + offset],
+              [center[0] - offset, center[1] + offset],
+              [center[0] - offset, center[1] - offset]
+            ]]
+          },
+          properties: {
+            name: street.place_name,
+            street: street.properties?.address || 'Rua',
+            index: index
+          }
+        }
+      }
+
+      return {
+        type: 'Feature' as const,
+        geometry: {
+          type: 'Polygon' as const,
+          coordinates: [[
+            [street.bbox[0], street.bbox[1]], // minLng, minLat
+            [street.bbox[2], street.bbox[1]], // maxLng, minLat
+            [street.bbox[2], street.bbox[3]], // maxLng, maxLat
+            [street.bbox[0], street.bbox[3]], // minLng, maxLat
+            [street.bbox[0], street.bbox[1]]  // fecha o polígono
+          ]]
+        },
+        properties: {
+          name: street.place_name,
+          street: street.properties?.address || 'Rua',
+          index: index
+        }
+      }
+    })
+
+    // Cria o GeoJSON com todas as ruas
+    const neighborhoodGeoJSON = {
+      type: 'FeatureCollection' as const,
+      features: streetFeatures
+    }
+
+    // Adiciona a fonte de dados
+    if (!map.getSource('neighborhood-streets-source')) {
+      map.addSource('neighborhood-streets-source', {
+        type: 'geojson',
+        data: neighborhoodGeoJSON
+      })
+    } else {
+      (map.getSource('neighborhood-streets-source') as any).setData(neighborhoodGeoJSON)
+    }
+
+    // Adiciona a camada de preenchimento vermelho
+    if (!map.getLayer('neighborhood-streets-fill')) {
+      map.addLayer({
+        id: 'neighborhood-streets-fill',
+        type: 'fill',
+        source: 'neighborhood-streets-source',
+        paint: {
+          'fill-color': '#ff0000',
+          'fill-opacity': 0.4
+        }
+      })
+    }
+
+    // Adiciona a camada de borda vermelha
+    if (!map.getLayer('neighborhood-streets-border')) {
+      map.addLayer({
+        id: 'neighborhood-streets-border',
+        type: 'line',
+        source: 'neighborhood-streets-source',
+        paint: {
+          'line-color': '#ff0000',
+          'line-width': 2,
+          'line-opacity': 0.8
+        }
+      })
+    }
+
+    // Calcula o bounding box de todas as ruas para ajustar a visualização
+    const allLngs = streets.flatMap(street => 
+      street.bbox ? [street.bbox[0], street.bbox[2]] : [street.center[0]]
+    )
+    const allLats = streets.flatMap(street => 
+      street.bbox ? [street.bbox[1], street.bbox[3]] : [street.center[1]]
+    )
+
+    const minLng = Math.min(...allLngs)
+    const maxLng = Math.max(...allLngs)
+    const minLat = Math.min(...allLats)
+    const maxLat = Math.max(...allLats)
+
+    // Ajusta a visualização para mostrar todas as ruas
+    map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
+      padding: 100,
+      duration: 1500
+    })
+
+    console.log(`🔴 ${streets.length} ruas do bairro ${neighborhoodName} pintadas de vermelho`)
+  }
+
+  // Função para mostrar alerta de alagamento (círculo vermelho com fade)
+  const showFloodAlert = (coordinates: [number, number], radiusMeters: number = 1000) => {
+    if (!mapRef.current) return
+
+    const map = mapRef.current
+
+    // Remove alerta anterior se existir
+    hideFloodAlert()
+
+    // Converte metros para graus (aproximação)
+    // 1 grau de latitude ≈ 111,320 metros
+    // 1 grau de longitude ≈ 111,320 * cos(latitude) metros
+    const lat = coordinates[1]
+    const radiusDegrees = radiusMeters / (111320 * Math.cos(lat * Math.PI / 180))
+
+    // Cria um círculo usando um polígono com muitos lados
+    const createCircle = (center: [number, number], radius: number, sides: number = 64) => {
+      const points: [number, number][] = []
+      for (let i = 0; i < sides; i++) {
+        const angle = (i * 360) / sides
+        const x = center[0] + radius * Math.cos(angle * Math.PI / 180)
+        const y = center[1] + radius * Math.sin(angle * Math.PI / 180)
+        points.push([x, y])
+      }
+      // Fecha o polígono
+      points.push(points[0])
+      return points
+    }
+
+    const circlePoints = createCircle(coordinates, radiusDegrees)
+
+    // Cria o GeoJSON do círculo
+    const floodAlertGeoJSON = {
+      type: 'FeatureCollection' as const,
+      features: [
+        {
+          type: 'Feature' as const,
+          geometry: {
+            type: 'Polygon' as const,
+            coordinates: [circlePoints]
+          },
+          properties: {
+            name: 'Alerta de Alagamento',
+            radius: radiusMeters,
+            type: 'flood-alert'
+          }
+        }
+      ]
+    }
+
+    // Adiciona a fonte de dados
+    if (!map.getSource('flood-alert-source')) {
+      map.addSource('flood-alert-source', {
+        type: 'geojson',
+        data: floodAlertGeoJSON
+      })
+    } else {
+      (map.getSource('flood-alert-source') as any).setData(floodAlertGeoJSON)
+    }
+
+    // Adiciona a camada de preenchimento vermelho com fade
+    if (!map.getLayer('flood-alert-fill')) {
+      map.addLayer({
+        id: 'flood-alert-fill',
+        type: 'fill',
+        source: 'flood-alert-source',
+        paint: {
+          'fill-color': '#ff0000',
+          'fill-opacity': 0.3
+        }
+      })
+    }
+
+    // Adiciona a camada de borda vermelha
+    if (!map.getLayer('flood-alert-border')) {
+      map.addLayer({
+        id: 'flood-alert-border',
+        type: 'line',
+        source: 'flood-alert-source',
+        paint: {
+          'line-color': '#ff0000',
+          'line-width': 3,
+          'line-opacity': 0.8
+        }
+      })
+    }
+
+    // Adiciona uma camada de gradiente para o fade (usando símbolos)
+    if (!map.getLayer('flood-alert-gradient')) {
+      map.addLayer({
+        id: 'flood-alert-gradient',
+        type: 'fill',
+        source: 'flood-alert-source',
+        paint: {
+          'fill-color': '#ff0000',
+          'fill-opacity': [
+            'interpolate',
+            ['linear'],
+            ['distance', coordinates],
+            0, 0.4,  // Centro: mais opaco
+            radiusDegrees * 0.7, 0.2,  // 70% do raio: menos opaco
+            radiusDegrees, 0.1  // Borda: bem transparente
+          ]
+        }
+      })
+    }
+
+    console.log(`🚨 Alerta de alagamento criado: ${radiusMeters}m ao redor de ${coordinates}`)
+  }
+
+  // Função para esconder alerta de alagamento
+  const hideFloodAlert = () => {
+    if (!mapRef.current) return
+
+    const map = mapRef.current
+
+    // Remove as camadas do alerta de alagamento
+    if (map.getLayer('flood-alert-gradient')) {
+      map.removeLayer('flood-alert-gradient')
+    }
+    if (map.getLayer('flood-alert-border')) {
+      map.removeLayer('flood-alert-border')
+    }
+    if (map.getLayer('flood-alert-fill')) {
+      map.removeLayer('flood-alert-fill')
+    }
+    if (map.getSource('flood-alert-source')) {
+      map.removeSource('flood-alert-source')
+    }
+
+    console.log('🚨 Alerta de alagamento removido')
+  }
+
+  // Função para esconder área vermelha
+  const hideRedArea = () => {
+    if (!mapRef.current) return
+
+    const map = mapRef.current
+
+    // Remove as camadas de ruas do bairro se existirem
+    if (map.getLayer('neighborhood-streets-border')) {
+      map.removeLayer('neighborhood-streets-border')
+    }
+    if (map.getLayer('neighborhood-streets-fill')) {
+      map.removeLayer('neighborhood-streets-fill')
+    }
+    if (map.getSource('neighborhood-streets-source')) {
+      map.removeSource('neighborhood-streets-source')
+    }
+
+    // Remove as camadas de área única se existirem
+    if (map.getLayer('red-area-border')) {
+      map.removeLayer('red-area-border')
+    }
+    if (map.getLayer('red-area-fill')) {
+      map.removeLayer('red-area-fill')
+    }
+    if (map.getSource('red-area-source')) {
+      map.removeSource('red-area-source')
+    }
+
+    // Remove alerta de alagamento também
+    hideFloodAlert()
+
+    console.log('🔴 Área vermelha removida')
+  }
 
   const recenterToUserLocation = () => {
     if (mapRef.current) {
@@ -45,8 +519,8 @@ const MapComponent = forwardRef<MapComponentRef, MapComponentProps>(({ onLocatio
             // Recentraliza o mapa usando flyTo (mais suave e visível)
             mapRef.current?.flyTo({
               center: [longitude, latitude],
-              zoom: 16, // Mesmo zoom inicial do mapa
-              pitch: 60,
+              zoom: 18, // Zoom mais próximo para mostrar a localização do usuário
+              pitch: 60, // Mantém a inclinação 3D
               bearing: 0,
               essential: true, // Garante que a animação seja executada
               duration: 1500 // Duração otimizada
@@ -97,9 +571,20 @@ const MapComponent = forwardRef<MapComponentRef, MapComponentProps>(({ onLocatio
     }
   }
 
-  // Expor a função de recentralização para o componente pai
+  // Expor as funções para o componente pai
   useImperativeHandle(ref, () => ({
-    recenterToUserLocation
+    recenterToUserLocation,
+    navigateToAddress: handleAddressSelect,
+    flyTo: (options: any) => {
+      if (mapRef.current) {
+        mapRef.current.flyTo(options);
+      }
+    },
+    showRedArea,
+    hideRedArea,
+    showNeighborhoodStreets,
+    showFloodAlert,
+    hideFloodAlert
   }), []);
 
   useEffect(() => {
@@ -110,9 +595,14 @@ const MapComponent = forwardRef<MapComponentRef, MapComponentProps>(({ onLocatio
       return
     }
 
+
     ;(async () => {
       const mapboxgl = (await import('mapbox-gl')).default
       mapboxgl.accessToken = token
+      
+      // Expõe mapboxgl no window para uso em outros componentes
+      ;(window as any).mapboxgl = mapboxgl
+      console.log('✅ mapboxgl exposto no window:', mapboxgl)
 
       const style = 'mapbox://styles/urbmind/cmgcff8ne00eb01qwgcvbgyqu'
 
@@ -141,6 +631,7 @@ const MapComponent = forwardRef<MapComponentRef, MapComponentProps>(({ onLocatio
 
       map.on('load', () => {
         if (!isMounted) return
+        console.log('✅ Mapa carregado! mapboxgl disponível:', (window as any).mapboxgl)
 
         map.addSource('mapbox-dem', {
           'type': 'raster-dem',
@@ -348,6 +839,7 @@ const MapComponent = forwardRef<MapComponentRef, MapComponentProps>(({ onLocatio
 
     return () => {
       isMounted = false
+      
       if (watchIdRef.current !== null && 'geolocation' in navigator) {
         navigator.geolocation.clearWatch(watchIdRef.current)
       }

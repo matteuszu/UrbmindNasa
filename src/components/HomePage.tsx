@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import MapComponent, { MapComponentRef } from './MapComponent';
 import BottomSection from './BottomSection';
 import MapControls from './MapControls';
-import { Book, User } from 'lucide-react';
+import { Book, User, Bell } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 interface UserLocation {
@@ -17,6 +17,7 @@ export default function HomePage() {
   const [isLabActive, setIsLabActive] = useState(false);
   const [showLocationButton, setShowLocationButton] = useState(true);
   const [isRecenterLoading, setIsRecenterLoading] = useState(false);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const mapRef = useRef<MapComponentRef>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -26,9 +27,85 @@ export default function HomePage() {
     document.documentElement.classList.add('dark');
   }, []);
 
+  // Reset do estado de busca quando o componente é montado e desmontado
+  useEffect(() => {
+    // Reset ao montar o componente
+    setIsSearchExpanded(false);
+    
+    return () => {
+      // Reset ao desmontar o componente
+      setIsSearchExpanded(false);
+    }
+  }, []);
+
+  // Debug: monitorar mudanças no isSearchExpanded
+  useEffect(() => {
+    console.log('🔍 HomePage - isSearchExpanded mudou para:', isSearchExpanded);
+    console.log('🔍 HomePage - Altura do mapa será:', isSearchExpanded ? '0' : '60vh');
+  }, [isSearchExpanded]);
+
 
   const handleLocationUpdate = (location: UserLocation) => {
     setUserLocation(location);
+  };
+
+  // Função para fechar o teclado quando a busca é fechada
+  const handleSearchExpanded = (expanded: boolean) => {
+    console.log('🔍 HomePage - handleSearchExpanded chamado com:', expanded);
+    console.log('🔍 HomePage - isSearchExpanded atual:', isSearchExpanded);
+    setIsSearchExpanded(expanded);
+    console.log('🔍 HomePage - isSearchExpanded após setState:', expanded);
+    
+    if (!expanded) {
+      // FORÇA O FECHAMENTO AGRESSIVO DO TECLADO
+      const forceCloseKeyboard = () => {
+        // Estratégia 1: Blur de qualquer elemento ativo
+        if (document.activeElement && document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+        
+        // Estratégia 2: Remover foco de todos os inputs
+        const allInputs = document.querySelectorAll('input, textarea, [contenteditable]');
+        allInputs.forEach(input => {
+          if (input instanceof HTMLElement) {
+            input.blur();
+          }
+        });
+        
+        // Estratégia 3: Forçar blur em intervalos
+        setTimeout(() => {
+          if (document.activeElement && document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+          }
+        }, 50);
+        
+        setTimeout(() => {
+          if (document.activeElement && document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+          }
+        }, 100);
+        
+        setTimeout(() => {
+          if (document.activeElement && document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+          }
+        }, 200);
+        
+        // Estratégia 4: Simular clique fora da tela
+        const body = document.body;
+        if (body) {
+          body.click();
+        }
+        
+        // Estratégia 5: Forçar scroll para remover foco
+        window.scrollTo(0, 0);
+      };
+      
+      // Executa imediatamente e com delay
+      forceCloseKeyboard();
+      setTimeout(forceCloseKeyboard, 100);
+      setTimeout(forceCloseKeyboard, 300);
+    }
   };
 
   const handleLocationClick = () => {
@@ -62,8 +139,8 @@ export default function HomePage() {
     <div 
       className="app-container"
       style={{ 
-        height: '100vh', 
-        overflow: 'hidden',
+        minHeight: '100vh', 
+        overflow: 'auto',
         touchAction: 'manipulation',
         display: 'flex',
         flexDirection: 'column',
@@ -154,6 +231,34 @@ export default function HomePage() {
             <Book className="h-5 w-5" />
           </Link>
 
+          {/* Botão de Alertas - apenas para usuários logados */}
+          {user && (
+            <Link
+              to="/alerts"
+              style={{
+                backgroundColor: 'rgba(29, 29, 29, 0.4)',
+                borderRadius: '999px',
+                height: '48px',
+                width: '48px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backdropFilter: 'blur(15px)',
+                WebkitBackdropFilter: 'blur(15px)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                pointerEvents: 'auto',
+                transition: 'all 0.2s ease',
+                textDecoration: 'none',
+                color: 'white'
+              }}
+              className="header-alerts-button hover:bg-slate-700/50"
+              title="Meus Alertas"
+            >
+              <Bell className="h-5 w-5" />
+            </Link>
+          )}
+
           {/* Botão de Login/Usuário */}
           {user ? (
             <div style={{ position: 'relative' }}>
@@ -216,11 +321,15 @@ export default function HomePage() {
       </div>
 
       <div 
-        className="map-container"
+        className={`map-container ${isSearchExpanded ? 'map-hidden' : 'map-visible'}`}
         style={{
-          height: '60vh',
+          height: isSearchExpanded ? '0' : '60vh',
           width: '100%',
-          position: 'relative'
+          position: 'relative',
+          overflow: 'hidden',
+          transition: 'height 0.3s ease',
+          minHeight: isSearchExpanded ? '0' : '60vh',
+          maxHeight: isSearchExpanded ? '0' : '60vh'
         }}
       >
         <MapComponent 
@@ -228,22 +337,36 @@ export default function HomePage() {
           onLocationUpdate={handleLocationUpdate}
         />
         
-        {/* Controles do Mapa */}
-        <MapControls
-          onLocationClick={handleLocationClick}
-          onLabToggle={handleLabToggle}
-          isLabActive={isLabActive}
-          showLocationButton={showLocationButton}
-          isRecenterLoading={isRecenterLoading}
-        />
+        {/* Controles do Mapa - só mostra quando busca não está expandida */}
+        {!isSearchExpanded && (
+          <MapControls
+            onLocationClick={handleLocationClick}
+            onLabToggle={handleLabToggle}
+            isLabActive={isLabActive}
+            showLocationButton={showLocationButton}
+            isRecenterLoading={isRecenterLoading}
+          />
+        )}
       </div>
       <div 
         className="bottom-section-container"
         style={{
-          flex: 1
+          flex: isSearchExpanded ? 1 : 1,
+          height: isSearchExpanded ? '100vh' : 'auto',
+          position: isSearchExpanded ? 'fixed' : 'relative',
+          top: isSearchExpanded ? 0 : 'auto',
+          left: isSearchExpanded ? 0 : 'auto',
+          right: isSearchExpanded ? 0 : 'auto',
+          zIndex: isSearchExpanded ? 50 : 'auto',
+          backgroundColor: isSearchExpanded ? '#01081a' : 'transparent',
         }}
       >
-        <BottomSection userLocation={userLocation} isLabActive={isLabActive} />
+        <BottomSection 
+          userLocation={userLocation} 
+          isLabActive={isLabActive} 
+          mapRef={mapRef}
+          onSearchExpanded={handleSearchExpanded}
+        />
       </div>
     </div>
   );

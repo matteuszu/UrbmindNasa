@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import type { Map as MapboxMap, LngLatLike } from 'mapbox-gl'
 import lottie from 'lottie-web'
+import { useMapViewportFix } from '../hooks/useMapViewportFix'
 
 export default function MapComponent() {
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -10,6 +11,9 @@ export default function MapComponent() {
   const userLocationRef = useRef<LngLatLike | null>(null)
   const lottieAnimationRef = useRef<any>(null)
   const [showRecenterButton, setShowRecenterButton] = useState(false)
+  
+  // Hook para corrigir problemas de viewport com teclado virtual
+  useMapViewportFix(mapRef)
 
   const recenterToUserLocation = () => {
     if (mapRef.current && userLocationRef.current) {
@@ -45,6 +49,7 @@ export default function MapComponent() {
       console.warn('VITE_MAPBOX_TOKEN ausente no .env')
       return
     }
+
 
     ;(async () => {
       const mapboxgl = (await import('mapbox-gl')).default
@@ -296,6 +301,7 @@ export default function MapComponent() {
 
     return () => {
       isMounted = false
+      
       if (watchIdRef.current !== null && 'geolocation' in navigator) {
         navigator.geolocation.clearWatch(watchIdRef.current)
       }
@@ -316,7 +322,7 @@ export default function MapComponent() {
       ref={containerRef}
       style={{
         width: '100%',
-        height: '60vh',
+        height: '100%',
         position: 'relative',
         zIndex: 1,
         pointerEvents: 'auto',

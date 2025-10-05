@@ -8,6 +8,44 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* Animação de pulso para o pin de busca */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 0 0 8px rgba(59, 130, 246, 0.2);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 0 0 12px rgba(59, 130, 246, 0.1);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 0 0 8px rgba(59, 130, 246, 0.2);
+  }
+}
+
+/* Classes para controle do mapa */
+.map-container {
+  transition: height 0.3s ease !important;
+}
+
+.map-container > div {
+  height: 100% !important;
+  min-height: 100% !important;
+}
+
+.map-visible {
+  height: 60vh !important;
+  min-height: 60vh !important;
+  max-height: 60vh !important;
+}
+
+.map-hidden {
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+}
 @layer properties {
   @supports (((-webkit-hyphens: none)) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color: rgb(from red r g b)))) {
     *, :before, :after, ::backdrop {
@@ -1775,6 +1813,44 @@ html, body {
   touch-action: none !important;
 }
 
+/* Melhorar comportamento do viewport em dispositivos móveis */
+@supports (height: 100vh) {
+  html, body {
+    height: 100vh;
+    height: -webkit-fill-available;
+  }
+}
+
+/* Prevenir mudanças de zoom indesejadas */
+* {
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Permitir seleção de texto em inputs */
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/* Estabilizar viewport durante mudanças de teclado virtual */
+@media screen and (max-width: 768px) {
+  body {
+    position: relative;
+    width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+  
+  #root {
+    min-height: 100%;
+    overflow: visible;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 
 /* Layout responsivo para desktop */
 @media (min-width: 768px) {
@@ -1785,6 +1861,12 @@ html, body {
   .map-container {
     height: 100vh !important;
     width: 60% !important;
+    min-height: 100vh !important;
+  }
+  
+  .map-container > div {
+    height: 100% !important;
+    min-height: 100% !important;
   }
   
   .bottom-section-container {
