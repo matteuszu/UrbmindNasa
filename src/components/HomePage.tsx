@@ -18,6 +18,7 @@ export default function HomePage() {
   const [showLocationButton, setShowLocationButton] = useState(true);
   const [isRecenterLoading, setIsRecenterLoading] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
   const mapRef = useRef<MapComponentRef>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -25,6 +26,16 @@ export default function HomePage() {
   // Set dark mode as default
   useEffect(() => {
     document.documentElement.classList.add('dark');
+  }, []);
+
+  // Detectar mudanças no tamanho da tela
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Reset do estado de busca quando o componente é montado e desmontado
@@ -140,10 +151,10 @@ export default function HomePage() {
       className="app-container"
       style={{ 
         minHeight: '100vh', 
-        overflow: 'auto',
+        overflow: 'hidden',
         touchAction: 'manipulation',
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: isDesktop ? 'row' : 'column',
         position: 'relative'
       }}
     >
@@ -320,16 +331,17 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* Mapa */}
       <div 
-        className={`map-container ${isSearchExpanded ? 'map-hidden' : 'map-visible'}`}
+        className="map-container"
         style={{
-          height: isSearchExpanded ? '0' : '60vh',
-          width: '100%',
+          flex: isDesktop ? 1 : 'none',
+          height: isDesktop ? '100vh' : (isSearchExpanded ? '0' : '60vh'),
+          width: isDesktop ? 'auto' : '100%',
           position: 'relative',
           overflow: 'hidden',
-          transition: 'height 0.3s ease',
-          minHeight: isSearchExpanded ? '0' : '60vh',
-          maxHeight: isSearchExpanded ? '0' : '60vh'
+          minWidth: isDesktop ? '60%' : 'auto',
+          transition: isDesktop ? 'none' : 'height 0.3s ease'
         }}
       >
         <MapComponent 
@@ -337,8 +349,8 @@ export default function HomePage() {
           onLocationUpdate={handleLocationUpdate}
         />
         
-        {/* Controles do Mapa - só mostra quando busca não está expandida */}
-        {!isSearchExpanded && (
+        {/* Controles do Mapa */}
+        {(!isSearchExpanded || isDesktop) && (
           <MapControls
             onLocationClick={handleLocationClick}
             onLabToggle={handleLabToggle}
@@ -348,17 +360,26 @@ export default function HomePage() {
           />
         )}
       </div>
+
+      {/* Barra Lateral */}
       <div 
-        className="bottom-section-container"
+        className="sidebar-container"
         style={{
-          flex: isSearchExpanded ? 1 : 1,
-          height: isSearchExpanded ? '100vh' : 'auto',
-          position: isSearchExpanded ? 'fixed' : 'relative',
-          top: isSearchExpanded ? 0 : 'auto',
-          left: isSearchExpanded ? 0 : 'auto',
-          right: isSearchExpanded ? 0 : 'auto',
-          zIndex: isSearchExpanded ? 50 : 'auto',
-          backgroundColor: isSearchExpanded ? '#01081a' : 'transparent',
+          width: isDesktop ? '400px' : '100%',
+          height: isDesktop ? '100vh' : (isSearchExpanded ? '100vh' : 'auto'),
+          backgroundColor: '#01081A',
+          position: isDesktop ? 'relative' : (isSearchExpanded ? 'fixed' : 'relative'),
+          top: isDesktop ? 'auto' : (isSearchExpanded ? 0 : 'auto'),
+          left: isDesktop ? 'auto' : (isSearchExpanded ? 0 : 'auto'),
+          right: isDesktop ? 'auto' : (isSearchExpanded ? 0 : 'auto'),
+          zIndex: isDesktop ? 'auto' : (isSearchExpanded ? 50 : 'auto'),
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          borderLeft: isDesktop ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
+          marginTop: isDesktop ? 0 : (isSearchExpanded ? 0 : '-30px'),
+          borderTopLeftRadius: isDesktop ? 0 : (isSearchExpanded ? 0 : '16px'),
+          borderTopRightRadius: isDesktop ? 0 : (isSearchExpanded ? 0 : '16px')
         }}
       >
         <BottomSection 

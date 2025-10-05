@@ -645,88 +645,25 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
   const labContent = <LabForm userLocation={userLocation} mapRef={mapRef} />;
 
   return (
-    <>
-      {/* Overlay para fechar busca quando clicar fora */}
-      {isSearchExpanded && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 1,
-            backgroundColor: 'transparent'
-          }}
-          onClick={() => {
-            setIsSearchExpanded(false);
-            setSearchResults([]);
-            onSearchExpanded?.(false);
-            addressSearchRef.current?.clearSearch();
-          }}
-        />
-      )}
-      
-      <div
+    <div
         className="bottom-section"
         style={{
           width: '100%',
-          height: isSearchExpanded ? '100vh' : '100%',
+          height: '100%',
           backgroundColor: '#01081A',
           position: 'relative',
           zIndex: 2,
-          marginTop: isSearchExpanded ? '0' : '-30px',
-          borderTopLeftRadius: isSearchExpanded ? '0' : '16px',
-          borderTopRightRadius: isSearchExpanded ? '0' : '16px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',
           justifyContent: 'flex-start',
-          padding: isSearchExpanded ? '100px 16px 40px 16px' : '32px 16px 40px 16px',
+          padding: '24px',
           fontFamily: 'Poppins, ui-sans-serif, sans-serif, system-ui',
+          overflowY: 'auto',
+          overflowX: 'hidden',
           flexShrink: 0
         }}
       >
-      {/* Botão de voltar quando em modo de busca */}
-      {isSearchExpanded && (
-        <div style={{
-          position: 'absolute',
-          top: '20px',
-          left: '20px',
-          zIndex: 10,
-        }}>
-          <button
-            onClick={() => {
-              setIsSearchExpanded(false);
-              setSearchResults([]);
-              onSearchExpanded?.(false);
-              // Limpa o input de busca e fecha o teclado
-              addressSearchRef.current?.clearSearch();
-            }}
-            style={{
-              width: '40px',
-              height: '40px',
-              backgroundColor: 'rgba(29, 29, 29, 0.8)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.8)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(29, 29, 29, 0.8)';
-            }}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-        </div>
-      )}
       {isLabActive ? (
         labContent
       ) : (
@@ -741,8 +678,7 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
           {/* Input de busca */}
           <div style={{ 
             width: '100%', 
-            maxWidth: '400px', 
-            margin: '0 auto 0px auto' 
+            marginBottom: '24px'
           }}>
             <AddressSearch
               ref={addressSearchRef}
@@ -770,74 +706,84 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
           {/* Card de Alerta de Alagamento */}
           {showFloodAlertCard && (
             <div style={{
-              backgroundColor: '#fef2f2',
-              border: '2px solid #fecaca',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: '12px',
-              padding: '16px',
-              margin: '16px 0',
-              boxShadow: '0 4px 12px rgba(239, 68, 68, 0.15)'
+              padding: '20px',
+              marginBottom: '24px',
+              backdropFilter: 'blur(10px)',
+              boxShadow: '0 8px 32px rgba(239, 68, 68, 0.2)'
             }}>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
-                marginBottom: '8px'
+                marginBottom: '16px'
               }}>
                 <div style={{
-                  width: '24px',
-                  height: '24px',
-                  backgroundColor: '#ef4444',
-                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                  borderRadius: '8px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'white',
-                  fontSize: '14px',
-                  fontWeight: 'bold'
+                  color: '#ef4444',
+                  fontSize: '16px'
                 }}>
                   ⚠️
                 </div>
                 <h3 style={{
                   margin: 0,
-                  fontSize: '16px',
+                  fontSize: '18px',
                   fontWeight: '600',
-                  color: '#dc2626'
+                  color: 'white',
+                  fontFamily: 'Poppins, ui-sans-serif, sans-serif'
                 }}>
-                  Alerta de Alagamento (Teste)
+                  ▲ Alerta de Alagamento (Teste)
                 </h3>
               </div>
               
-              <p style={{
-                margin: '0 0 8px 0',
-                fontSize: '14px',
-                color: '#7f1d1d',
-                lineHeight: '1.4'
+              <div style={{
+                marginBottom: '16px'
               }}>
-                <strong>Local:</strong> {floodAlertLocation}
-              </p>
-              
-              <p style={{
-                margin: '0 0 12px 0',
-                fontSize: '14px',
-                color: '#7f1d1d',
-                lineHeight: '1.4'
-              }}>
-                <strong>Área de Risco:</strong> 1 km ao redor deste ponto
-              </p>
+                <p style={{
+                  margin: '0 0 8px 0',
+                  fontSize: '14px',
+                  color: '#d1d5db',
+                  lineHeight: '1.5',
+                  fontFamily: 'Poppins, ui-sans-serif, sans-serif'
+                }}>
+                  <strong style={{ color: 'white' }}>Local:</strong> {floodAlertLocation}
+                </p>
+                
+                <p style={{
+                  margin: '0 0 12px 0',
+                  fontSize: '14px',
+                  color: '#d1d5db',
+                  lineHeight: '1.5',
+                  fontFamily: 'Poppins, ui-sans-serif, sans-serif'
+                }}>
+                  <strong style={{ color: 'white' }}>Área de Risco:</strong> 1 km ao redor deste ponto
+                </p>
+              </div>
               
               <div style={{
-                backgroundColor: '#fecaca',
-                padding: '8px 12px',
+                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                border: '1px solid rgba(34, 197, 94, 0.3)',
+                padding: '12px 16px',
                 borderRadius: '8px',
-                marginBottom: '12px'
+                marginBottom: '16px'
               }}>
                 <p style={{
                   margin: 0,
                   fontSize: '13px',
-                  color: '#7f1d1d',
-                  fontWeight: '500'
+                  color: '#d1d5db',
+                  fontWeight: '500',
+                  fontFamily: 'Poppins, ui-sans-serif, sans-serif',
+                  lineHeight: '1.4'
                 }}>
-                  🧪 <strong>Teste Mockado:</strong> Este é um teste da funcionalidade de alerta de alagamento. 
+                  ✓ <strong style={{ color: '#22c55e' }}>Teste Mockado:</strong> Este é um teste da funcionalidade de alerta de alagamento. 
                   Em produção, esta área seria marcada com base em dados reais de risco.
                 </p>
               </div>
@@ -846,21 +792,27 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
                 onClick={removeFloodAlert}
                 style={{
                   width: '100%',
-                  padding: '8px 16px',
-                  backgroundColor: '#dc2626',
+                  padding: '12px 16px',
+                  backgroundColor: '#ef4444',
                   color: 'white',
                   border: 'none',
                   borderRadius: '8px',
                   fontSize: '14px',
-                  fontWeight: '500',
+                  fontWeight: '600',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.2s ease',
+                  fontFamily: 'Poppins, ui-sans-serif, sans-serif',
+                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#b91c1c';
+                  e.currentTarget.style.backgroundColor = '#dc2626';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(239, 68, 68, 0.4)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#dc2626';
+                  e.currentTarget.style.backgroundColor = '#ef4444';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.3)';
                 }}
               >
                 Entendi - Fechar Alerta
@@ -871,6 +823,5 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
         </div>
       )}
     </div>
-    </>
   )
 }

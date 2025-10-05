@@ -15,17 +15,21 @@ export default function MapControls({
   showLocationButton = true,
   isRecenterLoading = false
 }: MapControlsProps) {
+  // Detectar se é desktop
+  const isDesktop = window.innerWidth >= 1024;
+  
   return (
     <div
       style={{
         position: 'absolute',
-        bottom: '40px', // 40px de distância da bottom section (32px + 8px)
-        left: '0',
-        right: '0',
+        bottom: isDesktop ? '20px' : '40px', // Mais próximo do footer no desktop
+        left: isDesktop ? 'auto' : '0',
+        right: isDesktop ? '420px' : '0', // Posiciona à direita, mas com espaço para a sidebar
         display: 'flex',
-        justifyContent: 'space-between',
+        justifyContent: isDesktop ? 'flex-end' : 'space-between',
         alignItems: 'center',
-        padding: '0 16px',
+        gap: isDesktop ? '16px' : '0',
+        padding: isDesktop ? '0' : '0 16px', // Sem padding no desktop
         zIndex: 10000, // Z-index alto para ficar visível sobre o mapa
         pointerEvents: 'none' // Permite cliques nos botões mas não interfere com o mapa
       }}
