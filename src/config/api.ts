@@ -85,3 +85,63 @@ async function sendDataToAnalisarBatchDirect(data: any): Promise<any> {
   }
 }
 
+// Interface para os parâmetros fixos
+export interface FixedParams {
+  chuva_mm: number;
+  freq_min: number;
+}
+
+// Interface para coordenada com parâmetros fixos
+export interface CoordinateWithFixedParams {
+  lon: number;
+  lat: number;
+  chuva_mm: number;
+  freq_min: number;
+  modo: string;
+}
+
+// Interface para o payload com parâmetros fixos
+export interface FixedParamsPayload {
+  pontos: CoordinateWithFixedParams[];
+}
+
+/**
+ * Função para enviar dados para analisar-batch com parâmetros fixos
+ * @param coordinates - Array de coordenadas (lon, lat)
+ * @param fixedParams - Parâmetros fixos (chuva_mm e freq_min) que serão aplicados a todas as coordenadas
+ * @returns Promise com a resposta da API
+ */
+export async function sendDataToAnalisarBatchWithFixedParams(
+  coordinates: Array<{lon: number, lat: number}>,
+  fixedParams: FixedParams
+): Promise<any> {
+  try {
+    console.log('🔄 Criando payload com parâmetros fixos...');
+    console.log('📊 Parâmetros fixos:', fixedParams);
+    console.log('📍 Total de coordenadas:', coordinates.length);
+    
+    // Criar array de pontos com parâmetros fixos
+    const pontos: CoordinateWithFixedParams[] = coordinates.map(coord => ({
+      lon: coord.lon,
+      lat: coord.lat,
+      chuva_mm: fixedParams.chuva_mm,
+      freq_min: fixedParams.freq_min,
+      modo: 'geo'
+    }));
+    
+    const payload: FixedParamsPayload = { pontos };
+    
+    console.log('📋 Payload criado:', JSON.stringify(payload, null, 2));
+    
+    // Usar a função existente para enviar os dados
+    const result = await sendDataToAnalisarBatch(payload);
+    
+    console.log('✅ Dados enviados com sucesso usando parâmetros fixos');
+    return result;
+    
+  } catch (error) {
+    console.error('❌ Erro ao enviar dados com parâmetros fixos:', error);
+    throw error;
+  }
+}
+
