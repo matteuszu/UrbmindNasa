@@ -4,12 +4,12 @@ import { MAPBOX_CONFIG } from '../config/mapbox';
 import { Header } from './Header';
 
 // Assets do Figma
-const imgDashboard = "/Users/mateus/Documents/urbmind/Login and Signup Flow/src/assets/ea63f3679223a69c1c8b4ffbccbe9c84a1c0090f.png";
-const imgMoonlitRainWeatherIconK022K1 = "/Users/mateus/Documents/urbmind/Login and Signup Flow/src/assets/bf1a2cc5606758d5adae2f8e7178ec842b5add92.png";
-const imgUnion = "/Users/mateus/Documents/urbmind/Login and Signup Flow/src/assets/4c4ae04daf1839ba5058b6961af9aa1fcd8ca4ed.svg";
-const imgEllipse13 = "/Users/mateus/Documents/urbmind/Login and Signup Flow/src/assets/164907ed81e5266f3e690902855bc7aacda469a6.svg";
-const imgEllipse14 = "/Users/mateus/Documents/urbmind/Login and Signup Flow/src/assets/23467f8e86d340cd9a73a495866f8300c7d58794.svg";
-const imgGroup1 = "/Users/mateus/Documents/urbmind/Login and Signup Flow/src/assets/97095b4fbfee9d8fed84c6dc4873edfbde3438b0.svg";
+const imgDashboard = "/src/assets/ea63f3679223a69c1c8b4ffbccbe9c84a1c0090f.png";
+const imgMoonlitRainWeatherIconK022K1 = "/src/assets/bf1a2cc5606758d5adae2f8e7178ec842b5add92.png";
+const imgUnion = "/src/assets/4c4ae04daf1839ba5058b6961af9aa1fcd8ca4ed.svg";
+const imgEllipse13 = "/src/assets/164907ed81e5266f3e690902855bc7aacda469a6.svg";
+const imgEllipse14 = "/src/assets/23467f8e86d340cd9a73a495866f8300c7d58794.svg";
+const imgGroup1 = "/src/assets/97095b4fbfee9d8fed84c6dc4873edfbde3438b0.svg";
 
 interface FigmaDashboardProps {
   userName?: string;

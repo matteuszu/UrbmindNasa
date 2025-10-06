@@ -11,10 +11,12 @@ interface AddressSearchProps {
   onSearchFocus?: () => void;
   onSearchBlur?: () => void;
   onClearSearch?: () => void;
+  onCancelSearch?: () => void; // Nova prop para cancelar busca
   placeholder?: string;
   className?: string;
   disabled?: boolean;
   userLocation?: [number, number]; // Para busca por proximidade
+  selectedLocation?: GeocodingResult | null; // Local selecionado para exibir
 }
 
 export interface AddressSearchRef {
@@ -29,10 +31,12 @@ export const AddressSearch = forwardRef<AddressSearchRef, AddressSearchProps>(({
   onSearchFocus,
   onSearchBlur,
   onClearSearch,
+  onCancelSearch,
   placeholder = "Buscar local",
   className = "",
   disabled = false,
-  userLocation
+  userLocation,
+  selectedLocation
 }, ref) => {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<GeocodingResult[]>([])
@@ -216,6 +220,12 @@ export const AddressSearch = forwardRef<AddressSearchRef, AddressSearchProps>(({
     forceCloseKeyboard()
   }
 
+  // Cancela a busca e volta para a localização do usuário
+  const cancelSearch = () => {
+    clearSearch()
+    onCancelSearch?.()
+  }
+
   // Expõe a função clearSearch para o componente pai
   useImperativeHandle(ref, () => ({
     clearSearch
@@ -277,7 +287,7 @@ export const AddressSearch = forwardRef<AddressSearchRef, AddressSearchProps>(({
         <input
           ref={inputRef}
           type="text"
-          value={query}
+          value={selectedLocation ? selectedLocation.place_name : query}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onFocus={() => {
@@ -289,16 +299,17 @@ export const AddressSearch = forwardRef<AddressSearchRef, AddressSearchProps>(({
           }}
           placeholder={placeholder}
           disabled={disabled}
+          readOnly={!!selectedLocation} // Torna readonly quando há local selecionado
           style={{
             width: '100%',
             height: '56px',
-            padding: '0 18px',
-            textIndent: '30px',
-            backgroundColor: '#1F2937',
+            padding: '0 50px 0 50px', // Espaço para ícone e botão X
+            textIndent: '0px', // Remove indentação
+            backgroundColor: selectedLocation ? '#1F2937' : '#1F2937',
             border: isOpen ? '2px solid #3B82F6' : '2px solid #374151',
             borderRadius: '16px',
             fontSize: '16px',
-            color: 'white',
+            color: 'white', // Sempre branco
             fontFamily: 'Poppins, ui-sans-serif, sans-serif',
             outline: 'none',
             transition: 'all 0.3s ease',
@@ -306,7 +317,10 @@ export const AddressSearch = forwardRef<AddressSearchRef, AddressSearchProps>(({
               ? '0 0 0 4px rgba(59, 130, 246, 0.1)' 
               : '0 2px 8px rgba(0, 0, 0, 0.1)',
             opacity: disabled ? 0.5 : 1,
-            cursor: disabled ? 'not-allowed' : 'text',
+            cursor: selectedLocation ? 'default' : (disabled ? 'not-allowed' : 'text'),
+            textOverflow: 'ellipsis', // Adiciona ... quando texto é muito longo
+            whiteSpace: 'nowrap', // Impede quebra de linha
+            overflow: 'hidden', // Esconde texto que não cabe
           }}
         />
 
@@ -322,51 +336,54 @@ export const AddressSearch = forwardRef<AddressSearchRef, AddressSearchProps>(({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: isOpen ? '#3B82F6' : '#9CA3AF',
+            color: selectedLocation ? '#10B981' : (isOpen ? '#3B82F6' : '#9CA3AF'),
             transition: 'color 0.3s ease',
             pointerEvents: 'none',
           }}
         >
           {isLoading ? (
             <Loader2 className="h-5 w-5 animate-spin" />
+          ) : selectedLocation ? (
+            <MapPin className="h-5 w-5" />
           ) : (
             <Search className="h-5 w-5" />
           )}
         </div>
 
-            {/* Clear Button - aparece quando há texto ou quando está focado */}
-            {(query || isOpen) && (
-              <button
-                onClick={clearSearch}
-                style={{
-                  position: 'absolute',
-                  right: '18px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  width: '24px',
-                  height: '24px',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#9CA3AF',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#374151';
-                  e.currentTarget.style.color = 'white';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.color = '#9CA3AF';
-                }}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+        {/* Clear/Cancel Button */}
+        {(query || isOpen || selectedLocation) && (
+          <button
+            onClick={selectedLocation ? cancelSearch : clearSearch}
+            style={{
+              position: 'absolute',
+              right: '18px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: '24px',
+              height: '24px',
+              backgroundColor: 'transparent',
+              border: 'none',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: selectedLocation ? '#EF4444' : '#9CA3AF',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = selectedLocation ? '#FEE2E2' : '#374151';
+              e.currentTarget.style.color = selectedLocation ? '#DC2626' : 'white';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = selectedLocation ? '#EF4444' : '#9CA3AF';
+            }}
+            title={selectedLocation ? 'Voltar para minha localização' : 'Limpar busca'}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {/* Lista de resultados - DESABILITADA para usar a lista do BottomSection */}

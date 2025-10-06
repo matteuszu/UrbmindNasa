@@ -26,6 +26,7 @@ export interface MapComponentRef {
   showNeighborhoodStreets: (streets: GeocodingResult[], neighborhoodName: string) => void;
   showFloodAlert: (coordinates: [number, number], radiusMeters?: number) => void;
   hideFloodAlert: () => void;
+  resize: () => void;
 }
 
 const MapComponent = forwardRef<MapComponentRef, MapComponentProps>(({ onLocationUpdate, onAddressSelect }, ref) => {
@@ -584,7 +585,12 @@ const MapComponent = forwardRef<MapComponentRef, MapComponentProps>(({ onLocatio
     hideRedArea,
     showNeighborhoodStreets,
     showFloodAlert,
-    hideFloodAlert
+    hideFloodAlert,
+    resize: () => {
+      if (mapRef.current) {
+        mapRef.current.resize();
+      }
+    }
   }), []);
 
   useEffect(() => {

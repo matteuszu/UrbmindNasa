@@ -34,6 +34,7 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [searchResults, setSearchResults] = useState<GeocodingResult[]>([]);
   const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<GeocodingResult | null>(null);
   
   // Estados para alerta de alagamento
   const [showFloodAlertCard, setShowFloodAlertCard] = useState(false);
@@ -72,6 +73,16 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
   // Debug: monitorar mudanças no isSearchExpanded
   useEffect(() => {
     console.log('🔍 BottomSection - isSearchExpanded mudou para:', isSearchExpanded);
+    
+    // Força o resize do mapa quando a busca é fechada (especialmente no mobile)
+    if (!isSearchExpanded && mapRef?.current) {
+      console.log('🔄 Forçando resize do mapa após fechar busca');
+      setTimeout(() => {
+        if (mapRef?.current) {
+          mapRef.current.resize();
+        }
+      }, 100);
+    }
   }, [isSearchExpanded]);
 
   // Reset do estado de busca quando o componente é montado e desmontado
@@ -122,6 +133,9 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
     console.log('🔴 BOTTOMSECTION: handleAddressSelect chamado!');
     console.log('🏠 Endereço selecionado na busca:', result.place_name);
     console.log('🔍 mapRef?.current existe?', !!mapRef?.current);
+    
+    // Salva o local selecionado
+    setSelectedLocation(result);
     
     // Navega para o endereço no mapa
     if (mapRef?.current) {
@@ -272,6 +286,43 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
   // Função para atualizar o loading da busca
   const handleSearchLoading = (loading: boolean) => {
     setIsSearchLoading(loading);
+  };
+
+  // Função para cancelar busca e voltar para localização do usuário
+  const handleCancelSearch = () => {
+    console.log('🔄 Cancelando busca e voltando para localização do usuário');
+    
+    // Limpa o local selecionado
+    setSelectedLocation(null);
+    
+    // Volta para a localização do usuário se disponível
+    if (userLocation && mapRef?.current) {
+      console.log('📍 Voltando para localização do usuário:', userLocation);
+      mapRef.current.flyTo({
+        center: [userLocation.longitude, userLocation.latitude],
+        zoom: 16,
+        pitch: 60,
+        bearing: 0,
+        duration: 1500,
+        essential: true
+      });
+    }
+    
+    // Limpa estados relacionados à busca
+    setSearchQuery('');
+    setSearchResults([]);
+    setIsSearchExpanded(false);
+    onSearchExpanded?.(false);
+    
+    // Remove alerta de alagamento se existir
+    setShowFloodAlertCard(false);
+    setFloodAlertLocation('');
+    
+    // Remove área vermelha do mapa se existir
+    if (mapRef?.current) {
+      mapRef.current.hideRedArea();
+      mapRef.current.hideFloodAlert();
+    }
   };
 
   // Componente para lista de endereços
@@ -644,6 +695,7 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
   // Conteúdo do Lab quando ativado
   const labContent = <LabForm userLocation={userLocation} mapRef={mapRef} />;
 
+
   return (
     <div
         className="bottom-section"
@@ -689,6 +741,8 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
               onSearchLoading={handleSearchLoading}
               onSearchFocus={handleSearchFocus}
               onSearchBlur={handleSearchBlur}
+              onCancelSearch={handleCancelSearch}
+              selectedLocation={selectedLocation}
               userLocation={userLocation ? [userLocation.longitude, userLocation.latitude] : undefined}
               className="w-full"
             />

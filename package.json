@@ -1,6 +1,7 @@
 {
-      "name": "Login and Signup Flow",
+      "name": "urbmind",
       "version": "0.1.0",
+      "description": "Intelligence for resilient cities",
       "private": true,
       "dependencies": {
             "@jsr/supabase__supabase-js": "^2.49.8",

@@ -1,7 +1,7 @@
 
-  # Login and Signup Flow
+# Urbmind
 
-  This is a code bundle for Login and Signup Flow. The original project is available at https://www.figma.com/design/bpIiIOuZ1eGBVhzPjGGw29/Login-and-Signup-Flow.
+Intelligence for resilient cities
 
   ## Running the code
 
