@@ -21,7 +21,7 @@ interface BottomSectionProps {
 }
 
 export default function BottomSection({ cityName = "Uberlândia", userLocation, isLabActive = false, mapRef, onSearchExpanded }: BottomSectionProps) {
-  // Debug: verificar se mapRef está sendo passado
+  // Debug: check if mapRef is being passed
   console.log('🔍 BottomSection - mapRef recebido:', mapRef);
   console.log('🔍 BottomSection - mapRef.current:', mapRef?.current);
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,17 +30,14 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
   const [isDragging1, setIsDragging1] = useState(false);
   const [isDragging2, setIsDragging2] = useState(false);
   
-  // Estados para busca expansível
+  // States for expandable search
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [searchResults, setSearchResults] = useState<GeocodingResult[]>([]);
   const [isSearchLoading, setIsSearchLoading] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<GeocodingResult | null>(null);
   
-  // Estados para alerta de alagamento
-  const [showFloodAlertCard, setShowFloodAlertCard] = useState(false);
-  const [floodAlertLocation, setFloodAlertLocation] = useState<string>('');
   
-  // Referência para o AddressSearch
+  // Reference for AddressSearch
   const addressSearchRef = useRef<AddressSearchRef>(null);
   const { 
     neighborhoods, 
@@ -52,29 +49,30 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
     loadCityNeighborhoods 
   } = useLocationData();
 
-  // Atualiza a localização quando recebe uma nova
+  // Update location when receiving a new one
   useEffect(() => {
     if (userLocation) {
       updateLocation(userLocation);
     }
   }, [userLocation, updateLocation]);
 
-  // Carrega os bairros da cidade quando o componente monta
+  // Load city neighborhoods when component mounts
   useEffect(() => {
     loadCityNeighborhoods(cityName);
   }, [cityName, loadCityNeighborhoods]);
 
-  // Debug: monitorar mudanças no mapRef
+
+  // Debug: monitor mapRef changes
   useEffect(() => {
     console.log('🔍 BottomSection - mapRef mudou:', mapRef);
     console.log('🔍 BottomSection - mapRef.current mudou:', mapRef?.current);
   }, [mapRef]);
 
-  // Debug: monitorar mudanças no isSearchExpanded
+  // Debug: monitor isSearchExpanded changes
   useEffect(() => {
     console.log('🔍 BottomSection - isSearchExpanded mudou para:', isSearchExpanded);
     
-    // Força o resize do mapa quando a busca é fechada (especialmente no mobile)
+    // Force map resize when search is closed (especially on mobile)
     if (!isSearchExpanded && mapRef?.current) {
       console.log('🔄 Forçando resize do mapa após fechar busca');
       setTimeout(() => {
@@ -85,59 +83,39 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
     }
   }, [isSearchExpanded]);
 
-  // Reset do estado de busca quando o componente é montado e desmontado
+  // Reset search state when component is mounted and unmounted
   useEffect(() => {
-    // Reset ao montar o componente
+    // Reset when mounting the component
     setIsSearchExpanded(false);
     setSearchResults([]);
     setIsSearchLoading(false);
-    setShowFloodAlertCard(false);
-    setFloodAlertLocation('');
     
     return () => {
-      // Reset ao desmontar o componente
+      // Reset when unmounting the component
       setIsSearchExpanded(false);
       setSearchResults([]);
       setIsSearchLoading(false);
-      setShowFloodAlertCard(false);
-      setFloodAlertLocation('');
     }
   }, []);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    console.log('Buscando por:', query);
+    console.log('Searching for:', query);
     
-    // Se a busca for limpa, fecha o card de alerta
-    if (!query.trim()) {
-      setShowFloodAlertCard(false);
-      setFloodAlertLocation('');
-    }
   };
 
 
-  // Função para remover alerta de alagamento
-  const removeFloodAlert = () => {
-    if (mapRef?.current) {
-      console.log('🧪 Removendo alerta de alagamento...');
-      mapRef.current.hideFloodAlert();
-      
-      // Esconde o card de alerta
-      setShowFloodAlertCard(false);
-      setFloodAlertLocation('');
-    }
-  };
 
-  // Função para lidar com a seleção de endereços
+  // Function to handle address selection
   const handleAddressSelect = (result: GeocodingResult) => {
     console.log('🔴 BOTTOMSECTION: handleAddressSelect chamado!');
-    console.log('🏠 Endereço selecionado na busca:', result.place_name);
+    console.log('🏠 Address selected in search:', result.place_name);
     console.log('🔍 mapRef?.current existe?', !!mapRef?.current);
     
-    // Salva o local selecionado
+    // Save the selected location
     setSelectedLocation(result);
     
-    // Navega para o endereço no mapa
+    // Navigate to the address on the map
     if (mapRef?.current) {
       console.log('🔴 Chamando mapRef.current.navigateToAddress...');
       try {
@@ -157,38 +135,26 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
         });
       }
     } else {
-      console.error('❌ mapRef.current não está disponível!');
+      console.error('❌ mapRef.current is not available!');
     }
     
-    // Fecha a busca expansível IMEDIATAMENTE
+    // Close the expandable search IMMEDIATELY
     setIsSearchExpanded(false);
     setSearchResults([]);
     onSearchExpanded?.(false);
     
-    // Mostra o card de alerta de alagamento APENAS para "Rua da conquista"
-    const isRuaDaConquista = result.place_name.toLowerCase().includes('rua da conquista');
-    if (isRuaDaConquista) {
-      console.log('🚨 Mostrando card de alerta para Rua da conquista (teste mockado)');
-      setShowFloodAlertCard(true);
-      setFloodAlertLocation(result.place_name);
-    } else {
-      console.log('ℹ️ Endereço normal - não mostrando card de alerta');
-      // FORÇA o fechamento do card para qualquer outro endereço
-      setShowFloodAlertCard(false);
-      setFloodAlertLocation('');
-    }
     
-    // FORÇA O FECHAMENTO AGRESSIVO DO TECLADO
+    // FORCE AGGRESSIVE KEYBOARD CLOSURE
     const forceCloseKeyboard = () => {
-      // Estratégia 1: Limpa o input de busca
+      // Strategy 1: Clear the search input
       addressSearchRef.current?.clearSearch();
       
-      // Estratégia 2: Blur de qualquer elemento ativo
+      // Strategy 2: Blur any active element
       if (document.activeElement && document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
       
-      // Estratégia 3: Remover foco de todos os inputs
+      // Strategy 3: Remove focus from all inputs
       const allInputs = document.querySelectorAll('input, textarea, [contenteditable]');
       allInputs.forEach(input => {
         if (input instanceof HTMLElement) {
@@ -253,26 +219,26 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
         console.error('❌ Erro ao chamar flyTo:', error);
       }
     } else {
-      console.error('❌ mapRef.current não está disponível para navegação direta');
+      console.error('❌ mapRef.current is not available for direct navigation');
     }
   };
 
-  // Função para expandir a busca
+  // Function to expand the search
   const handleSearchFocus = () => {
     setIsSearchExpanded(true);
     onSearchExpanded?.(true);
   };
 
-  // Função para fechar a busca expansível
+  // Function to close the expandable search
   const handleSearchBlur = () => {
-    // Delay para permitir cliques nos resultados
+    // Delay to allow clicks on results
     setTimeout(() => {
-      // Só fecha se não há resultados
+      // Only close if there are no results
       if (searchResults.length === 0) {
         setIsSearchExpanded(false);
         setSearchResults([]);
         onSearchExpanded?.(false);
-        // Limpa o input e fecha o teclado
+        // Clear the input and close the keyboard
         addressSearchRef.current?.clearSearch();
       }
     }, 300);
@@ -314,9 +280,6 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
     setIsSearchExpanded(false);
     onSearchExpanded?.(false);
     
-    // Remove alerta de alagamento se existir
-    setShowFloodAlertCard(false);
-    setFloodAlertLocation('');
     
     // Remove área vermelha do mapa se existir
     if (mapRef?.current) {
@@ -629,7 +592,7 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
     )
   }));
 
-  // Se não há bairros carregados, mostra cards de exemplo
+  // If no neighborhoods are loaded, show example cards
   const fallbackCards = [
     {
       id: 'fallback-1',
@@ -748,6 +711,7 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
             />
           </div>
 
+
           {/* Carrossel de bairros ou Lista de endereços */}
           {isSearchExpanded ? (
             <AddressList />
@@ -757,122 +721,6 @@ export default function BottomSection({ cityName = "Uberlândia", userLocation, 
             />
           )}
 
-          {/* Card de Alerta de Alagamento */}
-          {showFloodAlertCard && (
-            <div style={{
-              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: '12px',
-              padding: '20px',
-              marginBottom: '24px',
-              backdropFilter: 'blur(10px)',
-              boxShadow: '0 8px 32px rgba(239, 68, 68, 0.2)'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                marginBottom: '16px'
-              }}>
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#ef4444',
-                  fontSize: '16px'
-                }}>
-                  ⚠️
-                </div>
-                <h3 style={{
-                  margin: 0,
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  color: 'white',
-                  fontFamily: 'Poppins, ui-sans-serif, sans-serif'
-                }}>
-                  ▲ Alerta de Alagamento (Teste)
-                </h3>
-              </div>
-              
-              <div style={{
-                marginBottom: '16px'
-              }}>
-                <p style={{
-                  margin: '0 0 8px 0',
-                  fontSize: '14px',
-                  color: '#d1d5db',
-                  lineHeight: '1.5',
-                  fontFamily: 'Poppins, ui-sans-serif, sans-serif'
-                }}>
-                  <strong style={{ color: 'white' }}>Local:</strong> {floodAlertLocation}
-                </p>
-                
-                <p style={{
-                  margin: '0 0 12px 0',
-                  fontSize: '14px',
-                  color: '#d1d5db',
-                  lineHeight: '1.5',
-                  fontFamily: 'Poppins, ui-sans-serif, sans-serif'
-                }}>
-                  <strong style={{ color: 'white' }}>Área de Risco:</strong> 1 km ao redor deste ponto
-                </p>
-              </div>
-              
-              <div style={{
-                backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                border: '1px solid rgba(34, 197, 94, 0.3)',
-                padding: '12px 16px',
-                borderRadius: '8px',
-                marginBottom: '16px'
-              }}>
-                <p style={{
-                  margin: 0,
-                  fontSize: '13px',
-                  color: '#d1d5db',
-                  fontWeight: '500',
-                  fontFamily: 'Poppins, ui-sans-serif, sans-serif',
-                  lineHeight: '1.4'
-                }}>
-                  ✓ <strong style={{ color: '#22c55e' }}>Teste Mockado:</strong> Este é um teste da funcionalidade de alerta de alagamento. 
-                  Em produção, esta área seria marcada com base em dados reais de risco.
-                </p>
-              </div>
-              
-              <button
-                onClick={removeFloodAlert}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  backgroundColor: '#ef4444',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  fontFamily: 'Poppins, ui-sans-serif, sans-serif',
-                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#dc2626';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(239, 68, 68, 0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#ef4444';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.3)';
-                }}
-              >
-                Entendi - Fechar Alerta
-              </button>
-            </div>
-          )}
 
         </div>
       )}

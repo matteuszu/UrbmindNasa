@@ -23,6 +23,7 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
     clearResults
   } = useLabAnalysis(userLocation);
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await runAnalysis();
@@ -34,6 +35,7 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
       updateFormData(field, numValue);
     }
   };
+
 
   // Monitorar resultados da análise e mostrar máscara vermelha se probabilidade > 60%
   useEffect(() => {
@@ -79,7 +81,7 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
           margin: '0 0 8px 0',
           fontFamily: 'Poppins, ui-sans-serif, sans-serif'
         }}>
-          🔬 Lab de Análise
+          🔬 Analysis Lab
         </h2>
         <p style={{
           fontSize: '14px',
@@ -87,11 +89,11 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
           margin: '0',
           fontFamily: 'Poppins, ui-sans-serif, sans-serif'
         }}>
-          Simule condições de chuva e analise riscos de alagamento
+          Simulate rainfall conditions and analyze flood risks
         </p>
       </div>
 
-      {/* Indicador de Modo Simulação */}
+      {/* Simulation Mode Indicator */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -114,17 +116,17 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
           fontWeight: '500',
           fontFamily: 'Poppins, ui-sans-serif, sans-serif'
         }}>
-          Modo Simulação Ativo
+          Simulation Mode Active
         </span>
       </div>
 
-      {/* Formulário */}
+      {/* Form */}
       <form onSubmit={handleSubmit} style={{
         display: 'flex',
         flexDirection: 'column',
         gap: '20px'
       }}>
-        {/* Coordenadas */}
+        {/* Coordinates */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
@@ -191,7 +193,7 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
           </div>
         </div>
 
-        {/* Chuva */}
+        {/* Rainfall */}
         <div>
           <label style={{
             display: 'block',
@@ -201,7 +203,7 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
             marginBottom: '8px',
             fontFamily: 'Poppins, ui-sans-serif, sans-serif'
           }}>
-            Chuva (mm)
+            Rainfall (mm)
           </label>
           <input
             type="number"
@@ -224,7 +226,7 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
           />
         </div>
 
-        {/* Frequência */}
+        {/* Frequency */}
         <div>
           <label style={{
             display: 'block',
@@ -234,7 +236,7 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
             marginBottom: '8px',
             fontFamily: 'Poppins, ui-sans-serif, sans-serif'
           }}>
-            Frequência (minutos)
+            Frequency (minutes)
           </label>
           <input
             type="number"
@@ -257,7 +259,7 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
           />
         </div>
 
-        {/* Botões */}
+        {/* Buttons */}
         <div style={{
           display: 'flex',
           gap: '12px',
@@ -280,7 +282,7 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
               fontFamily: 'Poppins, ui-sans-serif, sans-serif'
             }}
           >
-            {isLoading ? '⏳ Analisando...' : '🔬 Analisar'}
+            {isLoading ? '⏳ Analyzing...' : '🔬 Analyze'}
           </button>
           
           <button
@@ -304,7 +306,8 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
         </div>
       </form>
 
-      {/* Resultados */}
+
+      {/* Results */}
       {analysisResult && (
         <div style={{
           backgroundColor: 'rgba(13, 82, 255, 0.1)',
@@ -320,7 +323,7 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
             margin: '0 0 16px 0',
             fontFamily: 'Poppins, ui-sans-serif, sans-serif'
           }}>
-            📊 Resultados da Análise
+            📊 Analysis Results
             {analysisResult.probabilidade > 0.6 && (
               <span style={{
                 color: '#ef4444',
@@ -329,7 +332,7 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
                 marginLeft: '8px',
                 fontFamily: 'Poppins, ui-sans-serif, sans-serif'
               }}>
-                🚨 ALERTA ATIVO
+                🚨 ALERT ACTIVE
               </span>
             )}
           </h3>
@@ -348,7 +351,7 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
                 marginBottom: '4px',
                 fontFamily: 'Poppins, ui-sans-serif, sans-serif'
               }}>
-                Probabilidade
+                Probability
               </div>
               <div style={{
                 color: 'white',
@@ -368,7 +371,7 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
                 marginBottom: '4px',
                 fontFamily: 'Poppins, ui-sans-serif, sans-serif'
               }}>
-                Risco Base
+                Base Risk
               </div>
               <div style={{
                 color: 'white',
@@ -394,7 +397,7 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
               marginBottom: '8px',
               fontFamily: 'Poppins, ui-sans-serif, sans-serif'
             }}>
-              Raio de Influência
+              Influence Radius
             </div>
             <div style={{
               display: 'flex',
@@ -414,7 +417,7 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
                 fontSize: '14px',
                 fontFamily: 'Poppins, ui-sans-serif, sans-serif'
               }}>
-                {(analysisResult.raio_influencia.prob_media * 100).toFixed(1)}% prob. média
+                {(analysisResult.raio_influencia.prob_media * 100).toFixed(1)}% avg prob.
               </span>
             </div>
           </div>
@@ -438,7 +441,7 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
                 fontFamily: 'Poppins, ui-sans-serif, sans-serif'
               }}
             >
-              ✕ Fechar Resultados
+              ✕ Close Results
             </button>
             
             {analysisResult.probabilidade > 0.6 && (
@@ -460,14 +463,14 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
                   fontFamily: 'Poppins, ui-sans-serif, sans-serif'
                 }}
               >
-                🚫 Remover Alerta
+                🚫 Remove Alert
               </button>
             )}
           </div>
         </div>
       )}
 
-      {/* Erro */}
+      {/* Error */}
       {error && (
         <div style={{
           backgroundColor: 'rgba(239, 68, 68, 0.1)',
@@ -482,7 +485,7 @@ export default function LabForm({ onAnalysisComplete, userLocation, mapRef }: La
             fontWeight: '500',
             fontFamily: 'Poppins, ui-sans-serif, sans-serif'
           }}>
-            ❌ Erro: {error}
+            ❌ Error: {error}
           </div>
         </div>
       )}
